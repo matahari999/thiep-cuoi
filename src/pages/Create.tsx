@@ -34,24 +34,29 @@ function readFileAsDataURL(file: File): Promise<string> {
 
 async function compressImage(file: File): Promise<string> {
   if (file.type === 'image/gif') return readFileAsDataURL(file)
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const img = new window.Image()
     const url = URL.createObjectURL(file)
+    const fallback = () => readFileAsDataURL(file).then(resolve).catch(() => resolve(''))
     img.onload = () => {
       URL.revokeObjectURL(url)
-      const MAX = 1280
-      let { width, height } = img
-      if (width > MAX || height > MAX) {
-        if (width > height) { height = Math.round(height * MAX / width); width = MAX }
-        else { width = Math.round(width * MAX / height); height = MAX }
-      }
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
-      resolve(canvas.toDataURL('image/jpeg', 0.82))
+      try {
+        const MAX = 1280
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+          else { width = Math.round(width * MAX / height); height = MAX }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { fallback(); return }
+        ctx.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', 0.82))
+      } catch { fallback() }
     }
-    img.onerror = () => { URL.revokeObjectURL(url); reject() }
+    img.onerror = () => { URL.revokeObjectURL(url); fallback() }
     img.src = url
   })
 }
@@ -332,7 +337,7 @@ export default function Create() {
           <div className="animate-fade-in pt-6">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Tải ảnh lên</h1>
-              <p className="text-sm text-gray-500">Hỗ trợ PNG, JPEG, WEBP, GIF (tối đa 5MB/ảnh)</p>
+              <p className="text-sm text-gray-500">Hỗ trợ PNG, JPEG, WEBP, GIF — ảnh tự động nén</p>
             </div>
 
             <div className="space-y-6">
@@ -402,14 +407,14 @@ export default function Create() {
             </div>
 
             <div className="mt-8 flex gap-3">
-              <button onClick={() => { if (hasAnyPhoto) setStep(3); else setStep(1) }}
+              <button onClick={() => setStep(1)}
                 disabled={uploading}
                 className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-200 disabled:opacity-50 transition-all">
-                {hasAnyPhoto ? 'Bỏ qua' : '← Quay lại'}
+                ← Quay lại
               </button>
-              <button onClick={() => hasAnyPhoto ? setStep(3) : heroInputRef.current?.click()}
-                disabled={!hasAnyPhoto || uploading}
-                className="flex-1 py-4 bg-red-500 disabled:bg-gray-300 text-white rounded-2xl font-bold text-sm hover:bg-red-600 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
+              <button onClick={() => setStep(3)}
+                disabled={uploading}
+                className="flex-1 py-4 bg-red-500 disabled:bg-gray-400 text-white rounded-2xl font-bold text-sm hover:bg-red-600 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
                 {uploading ? 'Đang nén ảnh...' : <> Xem trước <ArrowRight className="w-4 h-4" /> </>}
               </button>
             </div>
