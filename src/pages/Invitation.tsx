@@ -3,6 +3,7 @@ import { AnimatedPattern } from '../components/AnimatedPattern'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2, Copy, Check, MessageCircle, Users, Printer, Play, Pause, QrCode, MessageSquare } from 'lucide-react'
 import { getTemplateById, allTemplates } from '../lib/templates'
+import { QRCodeSVG } from 'qrcode.react'
 
 interface InvitationData {
   groom: string
@@ -806,16 +807,33 @@ export default function Invitation() {
         {showQr && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6 print-hidden" onClick={() => setShowQr(false)}>
             <div className="bg-white rounded-3xl p-8 max-w-xs w-full text-center" onClick={e => e.stopPropagation()}>
-              <div className="w-48 h-48 mx-auto mb-4 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-                <img src={`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(window.location.href)}`}
-                  alt="QR Code" className="w-full h-full object-contain" />
+              <div className="w-52 h-52 mx-auto mb-4 bg-white rounded-2xl flex items-center justify-center p-2 border border-gray-100">
+                <QRCodeSVG
+                  value={window.location.href}
+                  size={180}
+                  bgColor="#ffffff"
+                  fgColor="#111111"
+                  level="M"
+                />
               </div>
               <p className="font-bold text-gray-800 text-sm mb-1">Chia sẻ qua mã QR</p>
+              {isCustom && (
+                <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3 leading-relaxed">
+                  ⚠️ Link này chỉ hoạt động trên thiết bị này.<br />
+                  Nâng cấp cao cấp để có link chia sẻ vĩnh viễn.
+                </p>
+              )}
               <p className="text-xs text-gray-400 mb-4 break-all">{window.location.href}</p>
               <button onClick={copyUrl}
                 className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all flex items-center justify-center gap-2">
                 {copied ? <><Check className="w-4 h-4" /> Đã sao chép</> : <><Copy className="w-4 h-4" /> Sao chép link</>}
               </button>
+              {isCustom && (
+                <Link to="/dat-hang" onClick={() => setShowQr(false)}
+                  className="mt-2 w-full py-2.5 bg-red-500 text-white rounded-xl text-xs font-semibold hover:bg-red-600 transition-all flex items-center justify-center gap-1">
+                  Đặt thiệp cao cấp — link vĩnh viễn →
+                </Link>
+              )}
               <button onClick={() => setShowQr(false)}
                 className="mt-2 w-full py-2 text-gray-500 text-sm">Đóng</button>
             </div>
