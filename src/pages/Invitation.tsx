@@ -237,9 +237,22 @@ export default function Invitation() {
   useEffect(() => { window.scrollTo(0, 0) }, [slug])
 
   useEffect(() => {
-    audioRef.current = new Audio('https://files.freemusicarchive.org/storage-freemusicarchive-org/tracks/bkSejUIn16rStHrC7NHp4j4DhWGKd1ICwI5DPDvw.mp3')
-    audioRef.current.loop = true
-    return () => { audioRef.current?.pause(); audioRef.current = null }
+    const audio = new Audio('https://files.freemusicarchive.org/storage-freemusicarchive-org/tracks/bkSejUIn16rStHrC7NHp4j4DhWGKd1ICwI5DPDvw.mp3')
+    audio.loop = true
+    audioRef.current = audio
+
+    audio.play().then(() => {
+      setMusicOn(true)
+    }).catch(() => {
+      // 브라우저 자동재생 차단 시 첫 터치/클릭에 시작
+      const start = () => {
+        audio.play().then(() => setMusicOn(true)).catch(() => {})
+      }
+      document.addEventListener('click', start, { once: true })
+      document.addEventListener('touchstart', start, { once: true })
+    })
+
+    return () => { audio.pause(); audioRef.current = null }
   }, [])
 
   const scrollToSection = useCallback((idx: number) => {
