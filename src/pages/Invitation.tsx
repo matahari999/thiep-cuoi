@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatedPattern } from '../components/AnimatedPattern'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2, Copy, Check, MessageCircle, Users, Printer, Play, Pause, QrCode, MessageSquare } from 'lucide-react'
 import { getTemplateById, allTemplates } from '../lib/templates'
 
@@ -190,31 +190,31 @@ export default function Invitation() {
   const [customLoading, setCustomLoading] = useState(true)
   const isCustom = slug === 'custom-invitation'
 
-  const [debugInfo, setDebugInfo] = useState('')
+  const location = useLocation()
 
   useEffect(() => {
     if (isCustom) {
+      const stateData = (location.state as any)?.invitationData
+      const raw = stateData ? JSON.stringify(stateData) : localStorage.getItem('thiepcuoi_custom')
       try {
-        const raw = localStorage.getItem('thiepcuoi_custom')
-        if (!raw) { setDebugInfo('localStorage trống — chưa tạo thiệp'); setCustomLoading(false); return }
-        const parsed = JSON.parse(raw)
-        const dateStr = typeof parsed.date === 'string' ? parsed.date : ''
-        setCustomData({
-          ...parsed,
-          template: parsed.template || 'classic-red',
-          mapUrl: parsed.mapUrl || 'https://maps.google.com/',
-          date: dateStr.includes('/') ? dateStr : parseCustomDate(dateStr),
-          heroPhoto: parsed.heroPhoto || '/photos/hero.jpg',
-          gallery: parsed.gallery?.filter(Boolean)?.length ? parsed.gallery : ['/photos/gallery-1.jpg', '/photos/gallery-2.jpg', '/photos/gallery-3.jpg', '/photos/gallery-4.jpg'],
-        })
-      } catch (e) {
-        setDebugInfo('Lỗi đọc dữ liệu: ' + String(e))
-      }
+        if (raw) {
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+          const dateStr = typeof parsed.date === 'string' ? parsed.date : ''
+          setCustomData({
+            ...parsed,
+            template: parsed.template || 'classic-red',
+            mapUrl: parsed.mapUrl || 'https://maps.google.com/',
+            date: dateStr.includes('/') ? dateStr : parseCustomDate(dateStr),
+            heroPhoto: parsed.heroPhoto || '/photos/hero.jpg',
+            gallery: parsed.gallery?.filter(Boolean)?.length ? parsed.gallery : ['/photos/gallery-1.jpg', '/photos/gallery-2.jpg', '/photos/gallery-3.jpg', '/photos/gallery-4.jpg'],
+          })
+        }
+      } catch { /* parse failed */ }
       setCustomLoading(false)
     } else {
       setCustomLoading(false)
     }
-  }, [isCustom])
+  }, [isCustom, location.state])
 
   const data = isCustom ? customData : (slug ? demoData[slug] : null)
   const theme = isCustom
@@ -378,9 +378,8 @@ export default function Invitation() {
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Không tìm thấy thiệp cưới</h1>
           {isCustom ? (
             <>
-              <p className="text-gray-500 mb-2">Thiệp chưa được tạo hoặc dữ liệu đã xóa.</p>
-              {debugInfo && <p className="text-xs text-orange-600 mb-3 bg-orange-50 p-3 rounded-xl text-left">{debugInfo}</p>}
-              <Link to="/create" className="inline-block mt-2 px-6 py-3 bg-red-500 text-white font-bold rounded-2xl text-sm hover:bg-red-600">
+              <p className="text-gray-500 mb-4">Thiệp chưa được tạo. Vui lòng tạo mới.</p>
+              <Link to="/create" className="inline-block px-6 py-3 bg-red-500 text-white font-bold rounded-2xl text-sm hover:bg-red-600">
                 Tạo thiệp mới →
               </Link>
             </>

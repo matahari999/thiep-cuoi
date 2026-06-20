@@ -217,18 +217,11 @@ export default function Create() {
   const generate = async () => {
     setSaving(true)
     await new Promise(r => setTimeout(r, 500))
-    try {
-      localStorage.setItem('thiepcuoi_custom', JSON.stringify({
-        ...form,
-        _created: Date.now(),
-      }))
-      setSaving(false)
-      setSaved(true)
-      setTimeout(() => navigate('/custom-invitation'), 1200)
-    } catch {
-      setSaving(false)
-      showToast('Lỗi lưu dữ liệu. Vui lòng thử lại.')
-    }
+    const payload = { ...form, _created: Date.now() }
+    try { localStorage.setItem('thiepcuoi_custom', JSON.stringify(payload)) } catch { /* quota exceeded — navigate state will carry data */ }
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => navigate('/custom-invitation', { state: { invitationData: payload } }), 1200)
   }
 
   if (saved) {
