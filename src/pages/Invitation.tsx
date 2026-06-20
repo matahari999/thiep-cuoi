@@ -39,8 +39,8 @@ interface InvitationData {
 
 const demoData: Record<string, InvitationData> = {}
 
-for (const t of allTemplates) {
-  const idx = allTemplates.indexOf(t)
+for (let idx = 0; idx < allTemplates.length; idx++) {
+  const t = allTemplates[idx]
   const couples = [
     { g: 'Nguyễn Văn Trang', b: 'Trần Thị Anh', gp: 'Ông Nguyễn Văn A & Bà Trần Thị B', bp: 'Ông Trần Văn C & Bà Lê Thị D', d: '15/12/2026', ti: '10:00', v: 'Nhà hàng Hoàng Gia, 123 Nguyễn Huệ, Q.1, TP.HCM' },
     { g: 'Lê Văn Minh', b: 'Phạm Thị Hoa', gp: 'Ông Lê Văn E & Bà Phạm Thị F', bp: 'Ông Phạm Văn G & Bà Trần Thị H', d: '20/01/2027', ti: '11:00', v: 'Trung tâm Hội nghị Diamond, 456 Lê Lợi, Q.3, TP.HCM' },
@@ -286,7 +286,6 @@ export default function Invitation() {
   }, [hasSlideshow, heroPhotos.length])
 
   const dday = data ? getDday(data.date, data.time) : { days: 0, hours: 0 }
-  const isKorean = false
   const colorClass = theme?.accent || 'text-red-500'
   const bgColorClass = colorClass.replace('text-', 'bg-')
   const accentStroke = theme?.accent?.includes('yellow') ? '#fde047' : theme?.accent?.includes('white') ? '#fff' : '#fca5a5'
@@ -632,16 +631,12 @@ export default function Invitation() {
         {/* ===== WELCOME ===== */}
         <section id="section-welcome" className="px-6 py-16 text-center print-section">
           <AnimatedSection>
-            <SectionTitle icon="💌" title={isKorean ? '초대합니다' : 'Thân mời'} titleEn="Welcome" color={colorClass} />
+            <SectionTitle icon="💌" title="Thân mời" titleEn="Welcome" color={colorClass} />
             <p className="text-2xl font-bold text-gray-800 mb-2">{data.groom}</p>
-            {data.groomParent && <p className="text-gray-400 text-sm mb-1">
-              {isKorean ? `${data.groomParent.split('&')[0]?.trim() || ''}의 아들` : `Con trai ${data.groomParent}`}
-            </p>}
+            {data.groomParent && <p className="text-gray-400 text-sm mb-1">Con trai {data.groomParent}</p>}
             <div className="flex justify-center my-4"><Heart className="w-5 h-5 text-gray-300" /></div>
             <p className="text-2xl font-bold text-gray-800 mb-2">{data.bride}</p>
-            {data.brideParent && <p className="text-gray-400 text-sm mb-8">
-              {isKorean ? `${data.brideParent.split('&')[0]?.trim() || ''}의 딸` : `Con gái ${data.brideParent}`}
-            </p>}
+            {data.brideParent && <p className="text-gray-400 text-sm mb-8">Con gái {data.brideParent}</p>}
             <p className="text-gray-600 leading-relaxed text-sm max-w-xs mx-auto">{data.message}</p>
           </AnimatedSection>
         </section>
@@ -649,20 +644,20 @@ export default function Invitation() {
         {/* ===== COUNTDOWN ===== */}
         <section id="section-countdown" className="px-6 py-12 bg-gradient-to-r from-red-50 via-white to-red-50 print-section">
           <AnimatedSection delay={100}>
-            <SectionTitle icon="📅" title={isKorean ? 'D-DAY' : 'Ngày cưới'} titleEn="Countdown" color={colorClass} />
+            <SectionTitle icon="📅" title="Ngày cưới" titleEn="Countdown" color={colorClass} />
             <div className="flex items-center justify-center gap-6">
               <div className="text-center">
                 <div className={`text-4xl font-bold ${colorClass}`}>{dday.days}</div>
-                <div className="text-xs text-gray-400 mt-1">{isKorean ? '일' : 'Ngày'}</div>
+                <div className="text-xs text-gray-400 mt-1">Ngày</div>
               </div>
               <div className={`text-4xl font-light ${colorClass}`}>:</div>
               <div className="text-center">
                 <div className={`text-4xl font-bold ${colorClass}`}>{dday.hours}</div>
-                <div className="text-xs text-gray-400 mt-1">{isKorean ? '시간' : 'Giờ'}</div>
+                <div className="text-xs text-gray-400 mt-1">Giờ</div>
               </div>
             </div>
             <p className="text-center text-sm text-gray-500 mt-4">
-              {data.date} ({isKorean ? '오전' : 'giờ'} {data.time})
+              {data.date} (giờ {data.time})
             </p>
           </AnimatedSection>
         </section>
@@ -670,14 +665,14 @@ export default function Invitation() {
         {/* ===== DETAILS ===== */}
         <section id="section-details" className="px-6 py-16 print-section">
           <AnimatedSection delay={200}>
-            <SectionTitle icon="🎊" title={isKorean ? '예식 정보' : 'Thông tin'} titleEn="Wedding Details" color={colorClass} />
+            <SectionTitle icon="🎊" title="Thông tin" titleEn="Wedding Details" color={colorClass} />
             <div className="space-y-4">
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
                 <div className={`w-12 h-12 ${bgColorClass || 'bg-red-100'} rounded-xl flex items-center justify-center shrink-0`}>
                   <Calendar className={`w-6 h-6 ${colorClass}`} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">{isKorean ? '일시' : 'Thời gian'}</p>
+                  <p className="text-xs text-gray-400">Thời gian</p>
                   <p className="font-semibold text-gray-800">{data.date} — {data.time}</p>
                 </div>
               </div>
@@ -686,7 +681,7 @@ export default function Invitation() {
                   <MapPin className={`w-6 h-6 ${colorClass}`} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">{isKorean ? '장소' : 'Địa điểm'}</p>
+                  <p className="text-xs text-gray-400">Địa điểm</p>
                   <p className="font-semibold text-gray-800 text-sm">{data.venue}</p>
                 </div>
               </a>
@@ -698,11 +693,11 @@ export default function Invitation() {
             <div className="mt-4 flex gap-3 print-hidden">
               <button onClick={() => window.open(`https://maps.google.com/maps/dir/?api=1&destination=${encodeURIComponent(data.venue)}`)}
                 className={`flex-1 py-4 rounded-2xl font-bold text-sm text-white transition-all ${bgColorClass || 'bg-red-500'} hover:opacity-90 flex items-center justify-center gap-2`}>
-                <MapPin className="w-4 h-4" /> {isKorean ? '길찾기' : 'Chỉ đường'}
+                <MapPin className="w-4 h-4" /> Chỉ đường
               </button>
               <button onClick={saveToCalendar}
                 className={`flex-1 py-4 rounded-2xl font-bold text-sm text-white transition-all ${bgColorClass || 'bg-red-500'} hover:opacity-90 flex items-center justify-center gap-2`}>
-                <Calendar className="w-4 h-4" /> {isKorean ? '일정 저장' : 'Lưu lịch'}
+                <Calendar className="w-4 h-4" /> Lưu lịch
               </button>
             </div>
           </AnimatedSection>
@@ -711,7 +706,7 @@ export default function Invitation() {
         {/* ===== GALLERY ===== */}
         <section id="section-gallery" className="px-6 py-16 bg-gray-50 print-section">
           <AnimatedSection delay={300}>
-            <SectionTitle icon="📸" title={isKorean ? '갤러리' : 'Album ảnh'} titleEn="Photo Gallery" color={colorClass} />
+            <SectionTitle icon="📸" title="Album ảnh" titleEn="Photo Gallery" color={colorClass} />
             <div className="grid grid-cols-2 gap-3">
               {data.gallery.length > 0 ? data.gallery.map((url, i) => (
                 <img key={i} src={url} alt={`Photo ${i + 1}`} className="w-full aspect-[3/4] object-cover rounded-2xl hover:opacity-90 transition-opacity hover:scale-[1.02] duration-500" loading="lazy" />
@@ -729,19 +724,17 @@ export default function Invitation() {
         {/* ===== BANK ===== */}
         <section id="section-bank" className="px-6 py-16 print-section">
           <AnimatedSection delay={400}>
-            <SectionTitle icon="🧧" title={isKorean ? '마음 전하실 곳' : 'Tiền mừng cưới'} titleEn="Wedding Gifts" color={colorClass} />
-            <p className="text-center text-sm text-gray-500 mb-4">
-              {isKorean ? '축복해 주시는 마음 감사합니다' : 'Cảm ơn tấm lòng của quý khách'}
-            </p>
+            <SectionTitle icon="🧧" title="Tiền mừng cưới" titleEn="Wedding Gifts" color={colorClass} />
+            <p className="text-center text-sm text-gray-500 mb-4">Cảm ơn tấm lòng của quý khách</p>
             <button onClick={() => setShowBank(!showBank)}
               className={`w-full py-4 rounded-2xl font-bold text-sm border-2 transition-all ${showBank ? `${colorClass.replace('text-', 'border-') || 'border-red-500'} bg-red-50` : 'border-gray-200 text-gray-600'}`}>
-              {isKorean ? '계좌번호 보기' : 'Xem tài khoản'} {showBank ? '▲' : '▼'}
+              Xem tài khoản {showBank ? '▲' : '▼'}
             </button>
             {showBank && (
               <div className="mt-4 space-y-3 animate-fade-in">
                 {([
-                  { side: 'Groom', label: isKorean ? '신랑측' : 'Nhà trai', bankText: data.bankGroom, bankId: data.bankGroomId, account: data.bankGroomAccount, holderName: data.bankGroomName, parent: data.groomParent },
-                  { side: 'Bride',  label: isKorean ? '신부측' : 'Nhà gái',  bankText: data.bankBride, bankId: data.bankBrideId, account: data.bankBrideAccount, holderName: data.bankBrideName, parent: data.brideParent },
+                  { side: 'Groom', label: 'Nhà trai', bankText: data.bankGroom, bankId: data.bankGroomId, account: data.bankGroomAccount, holderName: data.bankGroomName, parent: data.groomParent },
+                  { side: 'Bride',  label: 'Nhà gái',  bankText: data.bankBride, bankId: data.bankBrideId, account: data.bankBrideAccount, holderName: data.bankBrideName, parent: data.brideParent },
                 ]).map(({ side, label, bankText, bankId, account, holderName, parent }) => {
                   const hasQr = bankId && account && holderName
                   const displayText = bankText || (hasQr ? `${VN_BANKS.find(b=>b.id===bankId)?.short || ''}: ${account}` : 'Bank: 1234 5678 9012')
@@ -761,7 +754,7 @@ export default function Invitation() {
                       <p className="font-bold text-gray-800 text-sm">{displayText}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{parent}</p>
                       <button onClick={() => copyToClipboard(account || displayText)} className="mt-2 text-xs text-red-500 font-semibold flex items-center gap-1">
-                        {copied ? <><Check className="w-3 h-3" /> {isKorean ? '복사됨' : 'Đã sao chép'}</> : <><Copy className="w-3 h-3" /> {isKorean ? '복사' : 'Sao chép số TK'}</>}
+                        {copied ? <><Check className="w-3 h-3" /> Đã sao chép</> : <><Copy className="w-3 h-3" /> Sao chép số TK</>}
                       </button>
                     </div>
                   )
@@ -774,28 +767,28 @@ export default function Invitation() {
         {/* ===== RSVP ===== */}
         <section id="section-rsvp" className="px-6 py-16 bg-gray-50 print-section">
           <AnimatedSection delay={500}>
-            <SectionTitle icon="💬" title={isKorean ? '참석 여부' : 'Xác nhận tham dự'} titleEn="RSVP" color={colorClass} />
+            <SectionTitle icon="💬" title="Xác nhận tham dự" titleEn="RSVP" color={colorClass} />
             {rsvpSent ? (
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Check className="w-8 h-8 text-green-500" />
                 </div>
-                <p className="font-bold text-gray-800">{isKorean ? '감사합니다!' : 'Cảm ơn bạn!'}</p>
-                <p className="text-sm text-gray-500">{isKorean ? '응답이 전송되었습니다' : 'Phản hồi đã được gửi'}</p>
+                <p className="font-bold text-gray-800">Cảm ơn bạn!</p>
+                <p className="text-sm text-gray-500">Phản hồi đã được gửi</p>
               </div>
             ) : (
               <div className="space-y-4">
-                <input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder={isKorean ? '이름' : 'Tên của bạn'} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                <input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Tên của bạn" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
                 <div className="flex gap-3">
-                  <input value={guestCount} onChange={e => setGuestCount(e.target.value)} type="number" min="1" max="10" placeholder={isKorean ? '인원' : 'Số người'} className="w-24 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                  <input value={guestCount} onChange={e => setGuestCount(e.target.value)} type="number" min="1" max="10" placeholder="Số người" className="w-24 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
                   <select value={guestCount} onChange={e => setGuestCount(e.target.value)} className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm text-gray-600">
-                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{isKorean ? `${n}명 참석` : `${n} người`}</option>)}
+                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} người</option>)}
                   </select>
                 </div>
-                <textarea value={guestMessage} onChange={e => setGuestMessage(e.target.value)} placeholder={isKorean ? '축하 메시지' : 'Lời chúc'} rows={3} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm resize-none" />
+                <textarea value={guestMessage} onChange={e => setGuestMessage(e.target.value)} placeholder="Lời chúc" rows={3} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm resize-none" />
                 <button onClick={() => guestName && setRsvpSent(true)} disabled={!guestName}
                   className={`w-full py-4 rounded-2xl font-bold text-sm text-white transition-all disabled:bg-gray-300 ${bgColorClass || 'bg-red-500'} hover:opacity-90 flex items-center justify-center gap-2`}>
-                  <MessageCircle className="w-4 h-4" /> {isKorean ? '전송하기' : 'Gửi phản hồi'}
+                  <MessageCircle className="w-4 h-4" /> Gửi phản hồi
                 </button>
               </div>
             )}
@@ -805,16 +798,12 @@ export default function Invitation() {
         {/* ===== GUEST BOOK ===== */}
         <section id="section-guestbook" className="px-6 py-16 print-section">
           <AnimatedSection delay={600}>
-            <SectionTitle icon="📖" title={isKorean ? '방명록' : 'Sổ lưu bút'} titleEn="Guest Book" color={colorClass} />
+            <SectionTitle icon="📖" title="Sổ lưu bút" titleEn="Guest Book" color={colorClass} />
             <div className="space-y-4">
               {[
                 { name: 'Minh Anh', msg: 'Chúc hai bạn trăm năm hạnh phúc! 💕' },
                 { name: 'Quốc Bảo', msg: 'Mong chờ ngày vui của các bạn. Yêu thương!' },
                 { name: 'Thanh Thảo', msg: 'Hạnh phúc ngập tràn nhé các bạn! 🌸' },
-                ...(isKorean ? [
-                  { name: '김지영', msg: '결혼 진심으로 축하드립니다! 🎉' },
-                  { name: '박민수', msg: '두 분의 앞날에 행복이 가득하길 바랍니다 🙏' },
-                ] : []),
               ].map((g, i) => (
                 <div key={i} className="bg-gray-50 rounded-2xl p-4 hover:bg-red-50 transition-colors">
                   <div className="flex items-center gap-2 mb-2">

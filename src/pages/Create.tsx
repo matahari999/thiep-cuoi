@@ -75,8 +75,6 @@ async function compressImage(file: File): Promise<string> {
 }
 
 
-function formatDate(v: string): string { return v }
-
 export default function Create() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -495,7 +493,7 @@ export default function Create() {
                         <span className={`mx-1 ${tmpl?.accent || 'text-red-400'}`}>&</span>
                         {form.bride?.split(' ').pop() || '??'}
                       </h2>
-                      {form.date && <p className={`text-[10px] ${tmpl?.fontColorSecondary || 'text-white/60'} mt-1`}>{formatDate(form.date)}</p>}
+                      {form.date && <p className={`text-[10px] ${tmpl?.fontColorSecondary || 'text-white/60'} mt-1`}>{form.date}</p>}
                     </div>
                   </div>
                 )
@@ -503,7 +501,7 @@ export default function Create() {
 
               {/* Mini preview content */}
               <div className="p-4 space-y-3 text-center">
-                <p className="text-xs text-gray-400">📅 {formatDate(form.date) || 'Chưa chọn ngày'} — {form.time}</p>
+                <p className="text-xs text-gray-400">📅 {form.date || 'Chưa chọn ngày'} — {form.time}</p>
                 <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                   📍
                   <a href={`https://maps.google.com/maps?q=${encodeURIComponent(form.venue || '')}`}
