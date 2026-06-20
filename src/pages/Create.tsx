@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import {
-  Heart, Upload, Image, ArrowLeft, ArrowRight, Sparkles,
-  Check, Camera, Trash2, Home, AlertCircle
-} from 'lucide-react'
+import { Upload, Image, ArrowLeft, ArrowRight, Sparkles, Heart, Check, Camera, Trash2, Home, AlertCircle } from 'lucide-react'
 import { templateCategories } from '../lib/templates'
+import { DateSelect, TimeSelect } from '../components/DateTimePicker'
 
 interface FormData {
   groom: string
@@ -61,58 +59,8 @@ async function compressImage(file: File): Promise<string> {
   })
 }
 
-const WEDDING_TIMES = ['06:00','07:00','08:00','09:00','10:00','10:30','11:00','11:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00']
 
-function DateSelect({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
-  const parse = (v: string): [string,string,string] => { const p = v ? v.split('/') : []; return [p[0]||'', p[1]||'', p[2]||''] }
-  const [triple, setTriple] = useState<[string,string,string]>(() => parse(value))
-  useEffect(() => { setTriple(parse(value)) }, [value])
-  const pick = (idx: 0|1|2, v: string) => {
-    const next: [string,string,string] = [...triple] as [string,string,string]
-    next[idx] = v; setTriple(next)
-    if (next[0] && next[1] && next[2]) onChange(`${next[0]}/${next[1]}/${next[2]}`)
-  }
-  const cls = "flex-1 px-2 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none text-sm"
-  return (
-    <div className={`flex gap-2 ${className || ''}`}>
-      <select value={triple[0]} onChange={e => pick(0, e.target.value)} className={cls}>
-        <option value="">Ngày</option>
-        {Array.from({length: 31}, (_, i) => String(i + 1).padStart(2, '0')).map(v => <option key={v} value={v}>{v}</option>)}
-      </select>
-      <select value={triple[1]} onChange={e => pick(1, e.target.value)} className={cls}>
-        <option value="">Tháng</option>
-        {Array.from({length: 12}, (_, i) => String(i + 1).padStart(2, '0')).map(v => <option key={v} value={v}>T.{Number(v)}</option>)}
-      </select>
-      <select value={triple[2]} onChange={e => pick(2, e.target.value)} className={cls}>
-        <option value="">Năm</option>
-        {[2025,2026,2027,2028,2029,2030].map(v => <option key={v} value={String(v)}>{v}</option>)}
-      </select>
-    </div>
-  )
-}
-
-function TimeSelect({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
-  return (
-    <select value={value} onChange={e => onChange(e.target.value)}
-      className={`w-full px-3 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none text-sm ${className || ''}`}>
-      <option value="">Chọn giờ</option>
-      {WEDDING_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-    </select>
-  )
-}
-
-function formatDate(iso: string): string {
-  if (!iso) return ''
-  if (iso.includes('/')) return iso
-  if (iso.includes('-')) {
-    const [y, m, d] = iso.split('-')
-    if (y && m && d) return `${d}/${m}/${y}`
-  }
-  if (iso.length === 8 && /^\d{8}$/.test(iso)) {
-    return `${iso.slice(6,8)}/${iso.slice(4,6)}/${iso.slice(0,4)}`
-  }
-  return iso
-}
+function formatDate(v: string): string { return v }
 
 export default function Create() {
   const navigate = useNavigate()
