@@ -229,7 +229,7 @@ export default function Invitation() {
   }, [hasSlideshow, heroPhotos.length])
 
   const dday = data ? getDday(data.date) : { days: 0, hours: 0 }
-  const isKorean = true
+  const isKorean = false
   const colorClass = theme?.accent || 'text-red-500'
   const bgColorClass = colorClass.replace('text-', 'bg-')
   const accentStroke = theme?.accent?.includes('yellow') ? '#fde047' : theme?.accent?.includes('white') ? '#fff' : '#fca5a5'
@@ -323,7 +323,7 @@ export default function Invitation() {
 
   const shareUrl = () => {
     if (navigator.share) {
-      navigator.share({ title: `초대장 - ${data?.groom} & ${data?.bride}`, url: window.location.href })
+      navigator.share({ title: `Thiệp cưới - ${data?.groom} & ${data?.bride}`, url: window.location.href })
     } else { copyUrl() }
   }
 
@@ -341,7 +341,7 @@ export default function Invitation() {
 
   const shareZalo = () => {
     const url = encodeURIComponent(window.location.href)
-    const title = encodeURIComponent(`초대장 - ${data?.groom} & ${data?.bride}`)
+    const title = encodeURIComponent(`Thiệp cưới - ${data?.groom} & ${data?.bride}`)
     window.open(`https://zalo.me/share?url=${url}&title=${title}`, '_blank')
   }
 
@@ -350,9 +350,9 @@ export default function Invitation() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <Heart className="w-12 h-12 text-red-300 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">초대장을 찾을 수 없습니다</h1>
-          <p className="text-gray-500 mb-4">초대장이 존재하지 않거나 삭제되었습니다.</p>
-          <Link to="/" className="text-red-500 font-semibold text-sm hover:underline">← 홈으로</Link>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Không tìm thấy thiệp cưới</h1>
+          <p className="text-gray-500 mb-4">Thiệp không tồn tại hoặc đã bị xóa.</p>
+          <Link to="/" className="text-red-500 font-semibold text-sm hover:underline">← Về trang chủ</Link>
         </div>
       </div>
     )
@@ -710,19 +710,19 @@ export default function Invitation() {
           <div className="grid grid-cols-2 gap-3">
             <button onClick={saveToCalendar} className="p-4 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
               <Calendar className="w-5 h-5 text-red-400 mx-auto mb-1" />
-              <span className="text-xs font-semibold text-gray-600">일정 저장</span>
+              <span className="text-xs font-semibold text-gray-600">Lưu lịch</span>
             </button>
             <button onClick={printInvitation} className="p-4 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
               <Printer className="w-5 h-5 text-red-400 mx-auto mb-1" />
-              <span className="text-xs font-semibold text-gray-600">인쇄하기</span>
+              <span className="text-xs font-semibold text-gray-600">In thiệp</span>
             </button>
             <button onClick={shareZalo} className="p-4 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
               <MessageSquare className="w-5 h-5 text-blue-400 mx-auto mb-1" />
-              <span className="text-xs font-semibold text-gray-600">Zalo 공유</span>
+              <span className="text-xs font-semibold text-gray-600">Chia sẻ Zalo</span>
             </button>
             <button onClick={() => setShowQr(true)} className="p-4 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
               <QrCode className="w-5 h-5 text-red-400 mx-auto mb-1" />
-              <span className="text-xs font-semibold text-gray-600">QR 코드</span>
+              <span className="text-xs font-semibold text-gray-600">Mã QR</span>
             </button>
           </div>
         </section>
@@ -735,14 +735,14 @@ export default function Invitation() {
                 <img src={`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(window.location.href)}`}
                   alt="QR Code" className="w-full h-full object-contain" />
               </div>
-              <p className="font-bold text-gray-800 text-sm mb-1">QR 코드로 공유하기</p>
+              <p className="font-bold text-gray-800 text-sm mb-1">Chia sẻ qua mã QR</p>
               <p className="text-xs text-gray-400 mb-4 break-all">{window.location.href}</p>
               <button onClick={copyUrl}
                 className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all flex items-center justify-center gap-2">
-                {copied ? <><Check className="w-4 h-4" /> 복사됨</> : <><Copy className="w-4 h-4" /> 링크 복사</>}
+                {copied ? <><Check className="w-4 h-4" /> Đã sao chép</> : <><Copy className="w-4 h-4" /> Sao chép link</>}
               </button>
               <button onClick={() => setShowQr(false)}
-                className="mt-2 w-full py-2 text-gray-500 text-sm">닫기</button>
+                className="mt-2 w-full py-2 text-gray-500 text-sm">Đóng</button>
             </div>
           </div>
         )}
@@ -762,7 +762,7 @@ export default function Invitation() {
           </div>
           <p className={`text-sm font-medium ${theme.fontColor} opacity-80`}>{data.groom.split(' ').pop()} & {data.bride.split(' ').pop()}</p>
           <p className={`text-xs mt-2 ${theme.fontColorSecondary} opacity-60`}>{data.date}</p>
-          {isCustom && <p className="text-[10px] mt-3 text-gray-400 italic">Thiệp Cưới Online에서 제작</p>}
+          {isCustom && <p className="text-[10px] mt-3 text-gray-400 italic">Được tạo bởi Thiệp Cưới Online</p>}
           <div className="mt-6 opacity-50">
             <p className={`text-[10px] ${theme.fontColorSecondary}`}>Powered by Thiệp Cưới Online</p>
           </div>

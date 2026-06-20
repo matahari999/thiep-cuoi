@@ -6,10 +6,10 @@ import { templateCategories, allTemplates } from '../lib/templates';
 import { photoSettings, getAnimation } from '../lib/animations';
 
 const features = [
-  { icon: <Camera className="w-5 h-5" />, title: '자체 제작', desc: '사진 업로드만 하면 자동으로 완성' },
-  { icon: <Smartphone className="w-5 h-5" />, title: '모바일 최적화', desc: '모든 기기에서 완벽한 화면' },
-  { icon: <Share2 className="w-5 h-5" />, title: '간편 공유', desc: 'Zalo, Facebook으로 바로 전송' },
-  { icon: <Upload className="w-5 h-5" />, title: '인쇄 지원', desc: 'A5 카드로 바로 인쇄 가능' },
+  { icon: <Camera className="w-5 h-5" />, title: 'Tự tạo', desc: 'Chỉ cần tải ảnh lên là tự động hoàn thành' },
+  { icon: <Smartphone className="w-5 h-5" />, title: 'Tối ưu mobile', desc: 'Hiển thị hoàn hảo trên mọi thiết bị' },
+  { icon: <Share2 className="w-5 h-5" />, title: 'Chia sẻ dễ dàng', desc: 'Gửi ngay qua Zalo, Facebook' },
+  { icon: <Upload className="w-5 h-5" />, title: 'Hỗ trợ in ấn', desc: 'In trực tiếp dưới dạng thiệp A5' },
 ]
 
 const catPhotos = [
@@ -42,15 +42,15 @@ export default function Landing() {
             <span className="font-serif font-bold text-lg text-gray-900 tracking-tight">Thiệp Cưới</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm">
-            <Link to="/" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">홈</Link>
-            <a href="#categories" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">컬렉션</a>
-            <Link to="/create" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">만들기</Link>
-            <Link to="/dat-hang" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">주문</Link>
+            <Link to="/" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">Trang chủ</Link>
+            <a href="#categories" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">Bộ sưu tập</a>
+            <Link to="/create" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">Tạo thiệp</Link>
+            <Link to="/dat-hang" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">Đặt hàng</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link to="/create"
               className="hidden sm:inline-flex items-center gap-1.5 px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-xs font-semibold transition-all tracking-wide">
-              <Sparkles className="w-3.5 h-3.5" /> 무료로 만들기
+              <Sparkles className="w-3.5 h-3.5" /> Tạo miễn phí
             </Link>
             <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2">
               {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -63,11 +63,11 @@ export default function Landing() {
       {menuOpen && (
         <div className="fixed inset-0 z-40 bg-white pt-16 md:hidden">
           <nav className="flex flex-col items-center gap-6 py-12">
-            <Link to="/" onClick={() => setMenuOpen(false)} className="text-lg font-medium text-gray-800">홈</Link>
-            <a href="#categories" onClick={() => setMenuOpen(false)} className="text-lg font-medium text-gray-800">컬렉션</a>
-            <Link to="/create" onClick={() => setMenuOpen(false)} className="text-lg font-medium text-gray-800">만들기</Link>
+            <Link to="/" onClick={() => setMenuOpen(false)} className="text-lg font-medium text-gray-800">Trang chủ</Link>
+            <a href="#categories" onClick={() => setMenuOpen(false)} className="text-lg font-medium text-gray-800">Bộ sưu tập</a>
+            <Link to="/create" onClick={() => setMenuOpen(false)} className="text-lg font-medium text-gray-800">Tạo thiệp</Link>
             <Link to="/dat-hang" onClick={() => setMenuOpen(false)}
-              className="px-8 py-3 bg-gray-900 text-white rounded-full text-sm font-semibold">주문하기</Link>
+              className="px-8 py-3 bg-gray-900 text-white rounded-full text-sm font-semibold">Đặt hàng</Link>
           </nav>
         </div>
       )}
@@ -78,47 +78,47 @@ export default function Landing() {
           <img src="/photos/gallery-20.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="relative text-center px-6 max-w-4xl mx-auto"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
               className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-xs text-white/70 font-medium mb-8 tracking-wide"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              프리미엄 모바일 청첩장 — 26가지 독점 디자인
+              Thiệp cưới mobile cao cấp — 26 mẫu độc quyền
             </motion.div>
             <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-[1.1] mb-6 tracking-tight">
-              <motion.span 
+              <motion.span
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
                 className="block"
-              >당신의 사랑 이야기를</motion.span>
-              <motion.span 
+              >Câu chuyện tình yêu của bạn</motion.span>
+              <motion.span
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
                 className="block bg-gradient-to-r from-white/90 via-amber-200 to-white/90 bg-clip-text text-transparent"
               >
-                아름답게 담아보세요
+                được kể đẹp nhất
               </motion.span>
             </h1>
-            <motion.p 
+            <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.9 }}
                 className="text-white/60 text-lg md:text-xl max-w-xl mx-auto mb-10 leading-relaxed font-light"
             >
-              몇 분 만에 나만의 모바일 청첩장을 만들어보세요.
-              사진 업로드, 정보 입력, 즉시 공유 — 디자인 지식이 없어도 OK.
+              Tạo thiệp cưới mobile của riêng bạn trong vài phút.
+              Tải ảnh, nhập thông tin, chia sẻ ngay — không cần biết thiết kế.
             </motion.p>
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 1.1 }}
@@ -126,19 +126,19 @@ export default function Landing() {
             >
               <Link to="/create"
                 className="group px-8 py-4 bg-white text-gray-900 rounded-2xl font-semibold text-sm transition-all inline-flex items-center justify-center gap-2 shadow-xl hover:bg-amber-50">
-                <Sparkles className="w-4 h-4" /> 청첩장 만들기
+                <Sparkles className="w-4 h-4" /> Tạo thiệp ngay
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <a href="#categories"
                 className="px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white rounded-2xl font-semibold text-sm transition-all inline-flex items-center justify-center">
-                디자인 보기
+                Xem mẫu thiệp
               </a>
             </motion.div>
           </motion.div>
 
           {/* Scroll indicator */}
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/40">
-            <span className="text-[10px] font-medium tracking-widest uppercase">스크롤</span>
+            <span className="text-[10px] font-medium tracking-widest uppercase">Cuộn</span>
             <div className="w-4 h-7 border border-white/40 rounded-full flex justify-center pt-1.5">
               <div className="w-1 h-1.5 bg-white/50 rounded-full animate-scroll-dot" />
             </div>
@@ -169,23 +169,22 @@ export default function Landing() {
               <div>
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-black text-white rounded-full text-[10px] font-bold tracking-wider mb-6">NEW</span>
                 <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
-                  무료 & 프리미엄
+                  Miễn phí & Cao cấp
                   <br />
-                  <span className="text-gray-400">웨딩 카드</span>
+                  <span className="text-gray-400">Thiệp cưới</span>
                 </h2>
                 <p className="text-gray-500 leading-relaxed mb-8">
-                  직접 사진을 업로드하여 무료로 빠르게 만들거나,
-                  디자이너가 제작한 프리미엄 카드를 주문하세요.
-                  모든 템플릿은 모바일에 최적화되어 있습니다.
+                  Tự tải ảnh và tạo miễn phí nhanh chóng, hoặc đặt thiệp cao cấp
+                  do nhà thiết kế thực hiện. Mọi mẫu đều tối ưu cho mobile.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Link to="/create"
                     className="px-6 py-3.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-all text-center">
-                    무료 — 업로드 & 생성
+                    Miễn phí — Tải & Tạo
                   </Link>
                   <Link to="/dat-hang"
                     className="px-6 py-3.5 bg-white border border-gray-200 hover:border-gray-300 text-gray-700 rounded-xl text-sm font-semibold transition-all text-center">
-                    프리미엄 — 299K₫부터
+                    Cao cấp — từ 299K₫
                   </Link>
                 </div>
               </div>
@@ -204,8 +203,8 @@ export default function Landing() {
         <section id="categories" className="py-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-14">
-            <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">컬렉션</h2>
-            <p className="text-gray-400 text-lg max-w-lg mx-auto">8가지 스타일, 21가지 독점 디자인 — 당신의 스타일을 찾아보세요</p>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">Bộ sưu tập</h2>
+            <p className="text-gray-400 text-lg max-w-lg mx-auto">8 phong cách, 21 mẫu độc quyền — Tìm phong cách của bạn</p>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {categories.map(cat => {
@@ -220,7 +219,7 @@ export default function Landing() {
                     <div className="p-5">
                       <div className="flex items-center justify-between mb-1">
                         <h3 className="font-bold text-gray-900">{cat.name}</h3>
-                        <span className="text-[10px] px-2 py-0.5 bg-gray-100 rounded-full text-gray-500 font-medium">{cat.count}개</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-gray-100 rounded-full text-gray-500 font-medium">{cat.count} mẫu</span>
                       </div>
                       <p className="text-xs text-gray-400">{cat.desc}</p>
                     </div>
@@ -235,8 +234,8 @@ export default function Landing() {
         <section id="all-templates" className="py-20 bg-gray-50">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-14">
-            <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">전체 템플릿</h2>
-            <p className="text-gray-400">모든 디자인을 둘러보세요</p>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">Tất cả mẫu thiệp</h2>
+            <p className="text-gray-400">Khám phá toàn bộ thiết kế</p>
             </div>
 
             {templateCategories.map(cat => (
@@ -262,7 +261,7 @@ export default function Landing() {
                             <span className={`text-5xl drop-shadow-lg ${t.fontColor}`}>{t.icon}</span>
                           </div>
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
-                            <p className={`text-xs font-semibold ${t.accent}`}>미리보기 →</p>
+                            <p className={`text-xs font-semibold ${t.accent}`}>Xem trước →</p>
                           </div>
                         </div>
                       </Link>
@@ -274,7 +273,7 @@ export default function Landing() {
                         <p className="text-xs text-gray-400">{t.nameEn}</p>
                         <Link to={`/${t.id}`}
                           className="mt-3 inline-flex items-center gap-1 text-gray-900 text-xs font-semibold hover:gap-2 transition-all">
-                          데모 보기 <ArrowRight className="w-3 h-3" />
+                          Xem demo <ArrowRight className="w-3 h-3" />
                         </Link>
                       </div>
                     </div>
@@ -290,8 +289,8 @@ export default function Landing() {
         <section className="py-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-14">
-            <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">갤러리</h2>
-            <p className="text-gray-400">각 사진마다 다른 애니메이션으로 만나보세요</p>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">Thư viện ảnh</h2>
+            <p className="text-gray-400">Mỗi bức ảnh với hiệu ứng chuyển động độc đáo</p>
             </div>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
               {photoSettings.map(p => {
@@ -326,8 +325,8 @@ export default function Landing() {
         <section className="py-20 bg-gray-50">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-14">
-            <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">추천 디자인</h2>
-            <p className="text-gray-400">가장 인기 있는 스타일을 미리보기</p>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">Mẫu nổi bật</h2>
+            <p className="text-gray-400">Xem trước những mẫu được yêu thích nhất</p>
             </div>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
               {allTemplates.slice(0, 6).map((t, i) => (
@@ -353,16 +352,16 @@ export default function Landing() {
             <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-white rounded-full blur-[120px]" />
           </div>
           <div className="relative max-w-2xl mx-auto px-6">
-            <h2 className="font-serif text-4xl md:text-5xl font-bold mb-4 tracking-tight">지금 시작하세요</h2>
-            <p className="text-gray-400 mb-8 text-lg">무료로 시작 — 프리미엄으로 완성</p>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold mb-4 tracking-tight">Bắt đầu ngay hôm nay</h2>
+            <p className="text-gray-400 mb-8 text-lg">Bắt đầu miễn phí — Hoàn thiện với gói cao cấp</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/create"
                 className="px-8 py-4 bg-white text-gray-900 rounded-2xl font-semibold text-sm hover:bg-gray-100 transition-all shadow-xl inline-flex items-center justify-center gap-2">
-                <Sparkles className="w-4 h-4" /> 무료로 만들기
+                <Sparkles className="w-4 h-4" /> Tạo miễn phí
               </Link>
               <Link to="/dat-hang"
                 className="px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-2xl font-semibold text-sm hover:bg-white/20 transition-all inline-flex items-center justify-center gap-2">
-                프리미엄 주문 <ArrowRight className="w-4 h-4" />
+                Đặt thiệp cao cấp <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -377,10 +376,10 @@ export default function Landing() {
               <span className="font-semibold text-gray-800">Thiệp Cưới Online</span>
             </div>
             <div className="flex gap-8 text-sm text-gray-400">
-              <Link to="/" className="hover:text-gray-600 transition-colors">홈</Link>
-              <a href="#categories" className="hover:text-gray-600 transition-colors">컬렉션</a>
-              <Link to="/create" className="hover:text-gray-600 transition-colors">만들기</Link>
-              <Link to="/dat-hang" className="hover:text-gray-600 transition-colors">프리미엄</Link>
+              <Link to="/" className="hover:text-gray-600 transition-colors">Trang chủ</Link>
+              <a href="#categories" className="hover:text-gray-600 transition-colors">Bộ sưu tập</a>
+              <Link to="/create" className="hover:text-gray-600 transition-colors">Tạo thiệp</Link>
+              <Link to="/dat-hang" className="hover:text-gray-600 transition-colors">Cao cấp</Link>
             </div>
           </div>
           <p className="text-center text-xs text-gray-400 mt-8">&copy; 2026 Thiệp Cưới Online. All rights reserved.</p>

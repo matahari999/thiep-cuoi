@@ -65,7 +65,22 @@ export default function Order() {
     }))
   }
 
-  const handleSubmit = () => setSubmitted(true)
+  const handleSubmit = () => {
+    const checkoutUrl = import.meta.env.VITE_LEMONSQUEEZY_CHECKOUT_URL
+    if (checkoutUrl && !checkoutUrl.includes('YOUR-STORE')) {
+      const params = new URLSearchParams({
+        'checkout[custom][template]': form.templateId,
+        'checkout[custom][groom]': form.groomName,
+        'checkout[custom][bride]': form.brideName,
+        'checkout[custom][date]': form.date,
+        'checkout[custom][venue]': form.venue,
+        'checkout[custom][contact]': form.contact,
+        'checkout[custom][total]': String(total),
+      })
+      window.open(`${checkoutUrl}?${params.toString()}`, '_blank')
+    }
+    setSubmitted(true)
+  }
 
   const currentCat = templateCategories.find(c => c.id === selectedCat) || templateCategories[0]
   const selected = allTemplates.find(t => t.id === form.templateId)
@@ -81,9 +96,15 @@ export default function Order() {
             <Check className="w-10 h-10 text-green-500" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Đặt hàng thành công!</h1>
-          <p className="text-gray-500 mb-6">
-            Cảm ơn bạn đã đặt thiệp cưới tại Thiệp Cưới Online. Chúng tôi sẽ liên hệ trong vòng 24 giờ.
+          <p className="text-gray-500 mb-3">
+            Cảm ơn bạn đã đặt thiệp cưới tại Thiệp Cưới Online.
           </p>
+          {import.meta.env.VITE_LEMONSQUEEZY_CHECKOUT_URL && !import.meta.env.VITE_LEMONSQUEEZY_CHECKOUT_URL.includes('YOUR-STORE') && (
+            <p className="text-sm text-amber-600 bg-amber-50 rounded-xl px-4 py-3 mb-4">
+              💳 Vui lòng hoàn tất thanh toán trong cửa sổ mới vừa mở.
+            </p>
+          )}
+          <p className="text-gray-400 text-sm mb-6">Chúng tôi sẽ liên hệ qua Zalo trong vòng 24 giờ.</p>
           <Link to="/" className="inline-flex items-center gap-2 text-red-500 font-semibold hover:underline">
             <ArrowLeft className="w-4 h-4" /> Quay lại trang chủ
           </Link>

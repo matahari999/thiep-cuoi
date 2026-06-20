@@ -177,28 +177,28 @@ export default function Create() {
         {step === 1 && (
           <div className="animate-fade-in pt-6">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">결혼식 정보</h1>
-              <p className="text-sm text-gray-500">카드를 만들기 위해 정보를 입력하세요</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Thông tin đám cưới</h1>
+              <p className="text-sm text-gray-500">Nhập thông tin để tạo thiệp</p>
             </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1 block">신랑</label>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Chú rể</label>
                   <input value={form.groom} onChange={e => update('groom', e.target.value)}
-                    placeholder="응우옌 반 아"
+                    placeholder="Nguyễn Văn A"
                     className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1 block">신부</label>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Cô dâu</label>
                   <input value={form.bride} onChange={e => update('bride', e.target.value)}
-                    placeholder="쩐 티 B"
+                    placeholder="Trần Thị B"
                     className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">결혼식 날</label>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">Ngày cưới</label>
                 <input value={form.date} onChange={e => update('date', e.target.value)}
                   type="date"
                   className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
@@ -206,21 +206,21 @@ export default function Create() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1 block">시간</label>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Giờ</label>
                   <input value={form.time} onChange={e => update('time', e.target.value)}
                     type="time"
                     className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1 block">위치</label>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Địa điểm</label>
                   <input value={form.venue} onChange={e => update('venue', e.target.value)}
-                    placeholder="식당, 호텔..."
+                    placeholder="Nhà hàng, khách sạn..."
                     className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">초대장 (선택 사항)</label>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">Lời nhắn (tùy chọn)</label>
                 <textarea value={form.message} onChange={e => update('message', e.target.value)}
                   rows={3}
                   className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm resize-none" />
@@ -230,7 +230,7 @@ export default function Create() {
             <button onClick={() => setStep(2)}
               disabled={!canSubmitStep1}
               className="mt-8 w-full py-4 bg-red-500 disabled:bg-gray-300 text-white rounded-2xl font-bold text-sm hover:bg-red-600 transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              다음 <ArrowRight className="w-4 h-4" />
+              Tiếp theo <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -239,14 +239,14 @@ export default function Create() {
         {step === 2 && (
           <div className="animate-fade-in pt-6">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">사진 업로드</h1>
-              <p className="text-sm text-gray-500">PNG, JPEG, WEBP, GIF 등 모두 지원 (최대 5MB/장)</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Tải ảnh lên</h1>
+              <p className="text-sm text-gray-500">Hỗ trợ PNG, JPEG, WEBP, GIF (tối đa 5MB/ảnh)</p>
             </div>
 
             <div className="space-y-6">
               {/* Hero photo */}
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-2 block">메인 사진 (hero)</label>
+                <label className="text-xs font-semibold text-gray-600 mb-2 block">Ảnh chính (hero)</label>
                 <div onClick={() => heroInputRef.current?.click()}
                   className={`relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-dashed transition-all cursor-pointer group ${
                     form.heroPhoto ? 'border-transparent' : 'border-gray-300 hover:border-red-400'
@@ -265,8 +265,8 @@ export default function Create() {
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                       <Upload className="w-10 h-10 mb-3 group-hover:text-red-400 transition-colors" />
-                      <span className="text-sm font-medium">클릭하여 메인 사진 업로드</span>
-                      <span className="text-xs mt-1">3:4 비율 권장, 최대 5MB</span>
+                      <span className="text-sm font-medium">Nhấn để tải ảnh chính lên</span>
+                      <span className="text-xs mt-1">Tỷ lệ 3:4 khuyến nghị, tối đa 5MB</span>
                     </div>
                   )}
                 </div>
@@ -275,7 +275,7 @@ export default function Create() {
 
               {/* Gallery photos */}
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-2 block">갤러리 사진 (최대 4장)</label>
+                <label className="text-xs font-semibold text-gray-600 mb-2 block">Ảnh gallery (tối đa 4 ảnh)</label>
                 <div className="grid grid-cols-2 gap-3">
                   {form.gallery.map((url, i) => (
                     <div key={i} onClick={() => url ? replaceGalleryPhoto(i) : galleryInputRef.current?.click()}
@@ -286,7 +286,7 @@ export default function Create() {
                         <>
                           <img src={url} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
-                            <span className="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-all">클릭하여 변경</span>
+                            <span className="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-all">Nhấn để thay</span>
                           </div>
                           <button onClick={(e) => removeGalleryPhoto(i, e)}
                             className="absolute top-2 right-2 w-7 h-7 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all">
@@ -296,14 +296,14 @@ export default function Create() {
                       ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                           <Image className="w-8 h-8 mb-1 group-hover:text-red-400 transition-colors" />
-                          <span className="text-xs">사진 {i + 1}</span>
+                          <span className="text-xs">Ảnh {i + 1}</span>
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
                 <p className="text-xs text-gray-400 mt-2 text-center">
-                  {form.gallery.filter(g => g).length}/4 장 업로드됨 — 클릭하여 교체 / 빈칸 클릭하여 추가
+                  {form.gallery.filter(g => g).length}/4 ảnh đã tải — Nhấn để thay / Nhấn ô trống để thêm
                 </p>
                 <input ref={galleryInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/svg+xml" multiple onChange={handleGalleryUpload} className="hidden" />
               </div>
@@ -312,12 +312,12 @@ export default function Create() {
             <div className="mt-8 flex gap-3">
               <button onClick={() => { if (hasAnyPhoto) setStep(3); else setStep(1) }}
                 className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-200 transition-all">
-                {hasAnyPhoto ? '건너뛰기' : '← 뒤로'}
+                {hasAnyPhoto ? 'Bỏ qua' : '← Quay lại'}
               </button>
               <button onClick={() => hasAnyPhoto ? setStep(3) : heroInputRef.current?.click()}
                 disabled={!hasAnyPhoto}
                 className="flex-1 py-4 bg-red-500 disabled:bg-gray-300 text-white rounded-2xl font-bold text-sm hover:bg-red-600 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
-                미리보기 <ArrowRight className="w-4 h-4" />
+                Xem trước <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -327,8 +327,8 @@ export default function Create() {
         {step === 3 && (
           <div className="animate-fade-in pt-6">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">템플릿 선택 & 미리보기</h1>
-              <p className="text-sm text-gray-500">카드 스타일을 선택하세요</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Chọn mẫu & xem trước</h1>
+              <p className="text-sm text-gray-500">Chọn phong cách thiệp</p>
             </div>
 
             {/* Category selector */}
@@ -395,15 +395,15 @@ export default function Create() {
 
               {/* Mini preview content */}
               <div className="p-4 space-y-3 text-center">
-                <p className="text-xs text-gray-400">📅 {formatDate(form.date) || '날짜 미정'} — {form.time}</p>
+                <p className="text-xs text-gray-400">📅 {formatDate(form.date) || 'Chưa chọn ngày'} — {form.time}</p>
                 <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                   📍
                   <a href={`https://maps.google.com/maps?q=${encodeURIComponent(form.venue || '')}`}
                     target="_blank" rel="noopener noreferrer"
                     className="text-red-500 hover:underline font-medium">
-                    {form.venue || '장소 미정'}
+                    {form.venue || 'Chưa có địa điểm'}
                   </a>
-                  <span className="text-[10px] text-red-300">(클릭하여 지도 열기)</span>
+                  <span className="text-[10px] text-red-300">(Nhấn để mở bản đồ)</span>
                 </p>
                 <div className="flex justify-center gap-1">
                   {form.gallery.filter(g => g).slice(0, 4).map((url, i) => (
@@ -430,15 +430,15 @@ export default function Create() {
             <button onClick={generate} disabled={saving}
               className="mt-8 w-full py-5 bg-gradient-to-r from-red-500 via-rose-500 to-red-600 text-white rounded-2xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200">
               {saving ? (
-                <>생성 중...</>
+                <>Đang tạo...</>
               ) : (
-                <><Sparkles className="w-5 h-5" /> 내 카드 만들기</>
+                <><Sparkles className="w-5 h-5" /> Tạo thiệp của tôi</>
               )}
             </button>
 
             <button onClick={() => setStep(2)}
               className="mt-3 w-full py-3 text-gray-500 text-sm hover:text-gray-700 transition-all flex items-center justify-center gap-1">
-              <ArrowLeft className="w-3 h-3" /> 뒤로
+              <ArrowLeft className="w-3 h-3" /> Quay lại
             </button>
           </div>
         )}
