@@ -440,6 +440,20 @@ export default function Invitation() {
           {musicOn ? <Music2 className={`w-5 h-5 ${colorClass}`} /> : <Music className="w-5 h-5 text-gray-400" />}
         </button>
 
+        {/* Free watermark */}
+        {isCustom && (
+          <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center overflow-hidden print-watermark">
+            <div className="watermark-float select-none text-center" style={{ transform: 'rotate(-30deg)' }}>
+              <p className="text-4xl font-bold tracking-widest text-gray-900/[0.07] leading-tight">
+                Thiệp Cưới
+              </p>
+              <p className="text-xs font-semibold tracking-[0.4em] text-gray-900/[0.07] uppercase mt-1">
+                thiepcuoi.online
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Print styles */}
         <style>{`
           @media print {
@@ -448,6 +462,14 @@ export default function Invitation() {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .print-section { page-break-inside: avoid; }
           }
+          @keyframes watermark-drift {
+            0%   { transform: rotate(-30deg) translateY(0px) scale(1); opacity: 0.07; }
+            33%  { transform: rotate(-30deg) translateY(-12px) scale(1.03); opacity: 0.10; }
+            66%  { transform: rotate(-30deg) translateY(8px) scale(0.98); opacity: 0.06; }
+            100% { transform: rotate(-30deg) translateY(0px) scale(1); opacity: 0.07; }
+          }
+          .watermark-float { animation: watermark-drift 6s ease-in-out infinite; }
+          .print-watermark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         `}</style>
 
         {/* ===== HERO — 진짜 청첩장 스타일 ===== */}
