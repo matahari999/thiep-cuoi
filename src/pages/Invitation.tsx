@@ -121,7 +121,7 @@ function AnimatedSection({ children, className, delay = 0 }: { children: React.R
   )
 }
 
-function DecorativeWaves(_props: { color?: string }) {
+function DecorativeWaves() {
   return (
     <>
       <div className="absolute left-0 top-0 bottom-0 w-14 overflow-hidden pointer-events-none z-10 opacity-40">
@@ -249,6 +249,7 @@ export default function Invitation() {
   const isKorean = true
   const colorClass = theme?.accent || 'text-red-500'
   const bgColorClass = colorClass.replace('text-', 'bg-')
+  const accentStroke = theme?.accent?.includes('yellow') ? '#fde047' : theme?.accent?.includes('white') ? '#fff' : '#fca5a5'
 
   useEffect(() => { window.scrollTo(0, 0) }, [slug])
 
@@ -317,11 +318,12 @@ export default function Invitation() {
     else { audioRef.current.play().catch(() => {}); setMusicOn(true) }
   }
 
-  const copyUrl = () => {
-    navigator.clipboard.writeText(window.location.href)
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+  const copyUrl = () => copyToClipboard(window.location.href)
 
   const shareUrl = () => {
     if (navigator.share) {
@@ -403,7 +405,7 @@ export default function Invitation() {
         <div id="section-hero" className="relative h-screen flex flex-col overflow-hidden print:h-auto print:min-h-[70vh]">
           {/* Wave decorations on both sides */}
           <div className={`${colorClass}`}>
-            <DecorativeWaves color={colorClass} />
+            <DecorativeWaves />
           </div>
 
           {/* Slideshow background layers */}
@@ -485,13 +487,13 @@ export default function Invitation() {
             {/* Decorative wave divider instead of heart */}
             <div className="flex items-center gap-2 mb-4">
               <svg className="w-16 h-4" viewBox="0 0 64 8" fill="none">
-                <path d="M0,4 Q8,0 16,4 Q24,8 32,4 Q40,0 48,4 Q56,8 64,4" stroke={theme.accent?.replace('text-', '') === 'yellow-300' ? '#fde047' : theme.accent?.includes('white') ? '#fff' : '#fca5a5'} strokeWidth="0.8" opacity="0.6" />
+                <path d="M0,4 Q8,0 16,4 Q24,8 32,4 Q40,0 48,4 Q56,8 64,4" stroke={accentStroke} strokeWidth="0.8" opacity="0.6" />
               </svg>
-              <svg className="w-5 h-5 animate-float" viewBox="0 0 24 24" fill="none" stroke={theme.accent?.includes('yellow') ? '#fde047' : theme.accent?.includes('white') ? '#fff' : '#fca5a5'} strokeWidth="1.5">
+              <svg className="w-5 h-5 animate-float" viewBox="0 0 24 24" fill="none" stroke={accentStroke} strokeWidth="1.5">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
               </svg>
               <svg className="w-16 h-4" viewBox="0 0 64 8" fill="none">
-                <path d="M0,4 Q8,0 16,4 Q24,8 32,4 Q40,0 48,4 Q56,8 64,4" stroke={theme.accent?.replace('text-', '') === 'yellow-300' ? '#fde047' : theme.accent?.includes('white') ? '#fff' : '#fca5a5'} strokeWidth="0.8" opacity="0.6" />
+                <path d="M0,4 Q8,0 16,4 Q24,8 32,4 Q40,0 48,4 Q56,8 64,4" stroke={accentStroke} strokeWidth="0.8" opacity="0.6" />
               </svg>
             </div>
             <p className={`text-xs font-light tracking-[0.3em] ${theme.fontColorSecondary} mb-3`}>WEDDING INVITATION</p>
@@ -525,7 +527,7 @@ export default function Invitation() {
             {data.groomParent && <p className="text-gray-400 text-sm mb-1">
               {isKorean ? `${data.groomParent.split('&')[0]?.trim() || ''}의 아들` : `Con trai ${data.groomParent}`}
             </p>}
-            <p className="text-gray-300 text-lg my-4">❤</p>
+            <div className="flex justify-center my-4"><Heart className="w-5 h-5 text-gray-300" /></div>
             <p className="text-2xl font-bold text-gray-800 mb-2">{data.bride}</p>
             {data.brideParent && <p className="text-gray-400 text-sm mb-8">
               {isKorean ? `${data.brideParent.split('&')[0]?.trim() || ''}의 딸` : `Con gái ${data.brideParent}`}
@@ -631,7 +633,7 @@ export default function Invitation() {
                   <p className="text-xs text-gray-400 mb-1">{isKorean ? '신랑측' : 'Nhà trai'}</p>
                   <p className="font-bold text-gray-800">{data.bankGroom || 'Bank: 1234 5678 9012'}</p>
                   <p className="text-sm text-gray-500">{data.groomParent}</p>
-                  <button onClick={copyUrl} className="mt-2 text-xs text-red-500 font-semibold flex items-center gap-1">
+                  <button onClick={() => copyToClipboard(data.bankGroom || 'Bank: 1234 5678 9012')} className="mt-2 text-xs text-red-500 font-semibold flex items-center gap-1">
                     {copied ? <><Check className="w-3 h-3" /> {isKorean ? '복사됨' : 'Đã sao chép'}</> : <><Copy className="w-3 h-3" /> {isKorean ? '복사' : 'Sao chép'}</>}
                   </button>
                 </div>
@@ -639,7 +641,7 @@ export default function Invitation() {
                   <p className="text-xs text-gray-400 mb-1">{isKorean ? '신부측' : 'Nhà gái'}</p>
                   <p className="font-bold text-gray-800">{data.bankBride || 'Bank: 9876 5432 1098'}</p>
                   <p className="text-sm text-gray-500">{data.brideParent}</p>
-                  <button onClick={copyUrl} className="mt-2 text-xs text-red-500 font-semibold flex items-center gap-1">
+                  <button onClick={() => copyToClipboard(data.bankBride || 'Bank: 9876 5432 1098')} className="mt-2 text-xs text-red-500 font-semibold flex items-center gap-1">
                     {copied ? <><Check className="w-3 h-3" /> {isKorean ? '복사됨' : 'Đã sao chép'}</> : <><Copy className="w-3 h-3" /> {isKorean ? '복사' : 'Sao chép'}</>}
                   </button>
                 </div>
@@ -755,7 +757,7 @@ export default function Invitation() {
             <svg className="w-12 h-3" viewBox="0 0 48 8" fill="none">
               <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={theme.fontColorSecondary} strokeWidth="0.7" opacity="0.4" />
             </svg>
-            <svg className="w-4 h-4 animate-float" viewBox="0 0 24 24" fill="none" stroke={theme.accent?.includes('yellow') ? '#fde047' : theme.accent?.includes('white') ? '#fff' : '#fca5a5'} strokeWidth="1.5">
+            <svg className="w-4 h-4 animate-float" viewBox="0 0 24 24" fill="none" stroke={accentStroke} strokeWidth="1.5">
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
             </svg>
             <svg className="w-12 h-3" viewBox="0 0 48 8" fill="none">
