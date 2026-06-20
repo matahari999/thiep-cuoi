@@ -10,6 +10,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/create" element={<Create />} />
+      <Route path="/v/:d" element={<Invitation />} />
       <Route path="/:slug" element={<Invitation />} />
       <Route path="/dat-hang" element={<Order />} />
       <Route path="/admin/*" element={<Admin />} />

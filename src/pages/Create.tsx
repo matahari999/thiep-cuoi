@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { Upload, Image, ArrowLeft, ArrowRight, Sparkles, Heart, Check, Camera, Trash2, Home, AlertCircle } from 'lucide-react'
 import { templateCategories, getCategoryForTemplate } from '../lib/templates'
 import { DateSelect, TimeSelect } from '../components/DateTimePicker'
+import { VN_BANKS, encodeBankDisplay } from '../lib/vietqr'
 
 interface FormData {
   groom: string
@@ -15,10 +16,24 @@ interface FormData {
   message: string
   bankGroom: string
   bankBride: string
+  bankGroomId: string
+  bankGroomAccount: string
+  bankGroomName: string
+  bankBrideId: string
+  bankBrideAccount: string
+  bankBrideName: string
   heroPhoto: string
   gallery: string[]
   template: string
   categoryId: string
+}
+
+function encodeShareUrl(data: Omit<FormData, 'heroPhoto' | 'gallery' | 'categoryId'>): string {
+  try {
+    const json = JSON.stringify(data)
+    const b64 = btoa(unescape(encodeURIComponent(json)))
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+  } catch { return '' }
 }
 
 function readFileAsDataURL(file: File): Promise<string> {
@@ -85,6 +100,8 @@ export default function Create() {
     venue: '',
     message: 'Trân trọng kính mời bạn đến chung vui cùng gia đình chúng tôi trong ngày trọng đại. Sự hiện diện của bạn là niềm vinh hạnh lớn nhất của chúng tôi.',
     bankGroom: '', bankBride: '',
+    bankGroomId: '', bankGroomAccount: '', bankGroomName: '',
+    bankBrideId: '', bankBrideAccount: '', bankBrideName: '',
     heroPhoto: '',
     gallery: ['', '', '', ''],
     template: initialTmpl,
@@ -171,11 +188,29 @@ export default function Create() {
   const generate = async () => {
     setSaving(true)
     await new Promise(r => setTimeout(r, 500))
-    const payload = { ...form, _created: Date.now() }
-    try { localStorage.setItem('thiepcuoi_custom', JSON.stringify(payload)) } catch { /* quota exceeded — navigate state will carry data */ }
+
+    const groomDisplay = form.bankGroomAccount
+      ? encodeBankDisplay(form.bankGroomId, form.bankGroomAccount, form.bankGroomName)
+      : form.bankGroom
+    const brideDisplay = form.bankBrideAccount
+      ? encodeBankDisplay(form.bankBrideId, form.bankBrideAccount, form.bankBrideName)
+      : form.bankBride
+
+    const payload = {
+      ...form,
+      bankGroom: groomDisplay,
+      bankBride: brideDisplay,
+      _created: Date.now(),
+    }
+    try { localStorage.setItem('thiepcuoi_custom', JSON.stringify(payload)) } catch { /* quota exceeded */ }
+
+    const { heroPhoto: _h, gallery: _g, categoryId: _c, ...textOnly } = payload
+    const encoded = encodeShareUrl(textOnly)
+    const shareUrl = encoded ? `/v/${encoded}` : '/custom-invitation'
+
     setSaving(false)
     setSaved(true)
-    setTimeout(() => navigate('/custom-invitation', { state: { invitationData: payload } }), 1200)
+    setTimeout(() => navigate(shareUrl, { state: { invitationData: payload } }), 1200)
   }
 
   if (saved) {
@@ -267,6 +302,35 @@ export default function Create() {
                 <textarea value={form.message} onChange={e => update('message', e.target.value)}
                   rows={3}
                   className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm resize-none" />
+              </div>
+
+              {/* Bank / VietQR */}
+              <div className="pt-2">
+                <p className="text-xs font-semibold text-gray-600 mb-3">🧧 Tài khoản tiền mừng (tùy chọn)</p>
+                {(['Groom', 'Bride'] as const).map(side => {
+                  const idKey = `bank${side}Id` as keyof FormData
+                  const accKey = `bank${side}Account` as keyof FormData
+                  const nameKey = `bank${side}Name` as keyof FormData
+                  const label = side === 'Groom' ? 'Nhà trai (chú rể)' : 'Nhà gái (cô dâu)'
+                  return (
+                    <div key={side} className="mb-4 p-4 bg-white/60 rounded-2xl border border-gray-100">
+                      <p className="text-[11px] font-bold text-gray-500 mb-2 uppercase tracking-wide">{label}</p>
+                      <div className="space-y-2">
+                        <select value={form[idKey] as string} onChange={e => update(idKey, e.target.value)}
+                          className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-400">
+                          <option value="">— Chọn ngân hàng —</option>
+                          {VN_BANKS.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
+                        <input value={form[accKey] as string} onChange={e => update(accKey, e.target.value)}
+                          placeholder="Số tài khoản"
+                          className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-400" />
+                        <input value={form[nameKey] as string} onChange={e => update(nameKey, e.target.value)}
+                          placeholder="Tên chủ tài khoản (IN HOA)"
+                          className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-400" />
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 

@@ -4,6 +4,15 @@ import { useParams, Link, useLocation } from 'react-router-dom'
 import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2, Copy, Check, MessageCircle, Users, Printer, Play, Pause, QrCode, MessageSquare } from 'lucide-react'
 import { getTemplateById, allTemplates } from '../lib/templates'
 import { QRCodeSVG } from 'qrcode.react'
+import { vietQrUrl, VN_BANKS } from '../lib/vietqr'
+
+function decodeShareUrl(encoded: string): Partial<InvitationData> | null {
+  try {
+    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice(0, (4 - encoded.length % 4) % 4)
+    const json = decodeURIComponent(escape(atob(padded)))
+    return JSON.parse(json)
+  } catch { return null }
+}
 
 interface InvitationData {
   groom: string
@@ -20,6 +29,12 @@ interface InvitationData {
   template: string
   bankGroom?: string
   bankBride?: string
+  bankGroomId?: string
+  bankGroomAccount?: string
+  bankGroomName?: string
+  bankBrideId?: string
+  bankBrideAccount?: string
+  bankBrideName?: string
 }
 
 const demoData: Record<string, InvitationData> = {}
@@ -186,16 +201,39 @@ function parseCustomDate(dateStr: string): string {
 }
 
 export default function Invitation() {
-  const { slug } = useParams<{ slug: string }>()
+  const { slug, d: encodedData } = useParams<{ slug?: string; d?: string }>()
 
   const [customData, setCustomData] = useState<InvitationData | null>(null)
   const [customLoading, setCustomLoading] = useState(true)
-  const isCustom = slug === 'custom-invitation'
+  const isShared = !!encodedData                      // /v/:d route — shareable URL
+  const isCustom = isShared || slug === 'custom-invitation'  // free-tier (both types)
 
   const location = useLocation()
 
   useEffect(() => {
-    if (isCustom) {
+    if (isShared && encodedData) {
+      // Decode text data from URL, use navigate state for photos (same device)
+      const decoded = decodeShareUrl(encodedData)
+      const stateData = (location.state as any)?.invitationData
+      if (decoded) {
+        const dateStr = typeof decoded.date === 'string' ? decoded.date : ''
+        const photos = stateData || {}
+        const base: InvitationData = {
+          groom: '', bride: '', groomParent: '', brideParent: '',
+          date: '', time: '', venue: '', mapUrl: 'https://maps.google.com/',
+          message: '', heroPhoto: '/photos/hero.jpg', gallery: [], template: 'classic-red',
+        }
+        setCustomData({
+          ...base,
+          ...decoded,
+          date: dateStr.includes('/') ? dateStr : parseCustomDate(dateStr),
+          heroPhoto: photos.heroPhoto || decoded.heroPhoto || '/photos/hero.jpg',
+          gallery: photos.gallery?.filter(Boolean)?.length ? photos.gallery : [],
+          mapUrl: decoded.mapUrl || 'https://maps.google.com/',
+        })
+      }
+      setCustomLoading(false)
+    } else if (isCustom) {
       const stateData = (location.state as any)?.invitationData
       const raw = stateData ? JSON.stringify(stateData) : localStorage.getItem('thiepcuoi_custom')
       try {
@@ -216,7 +254,7 @@ export default function Invitation() {
     } else {
       setCustomLoading(false)
     }
-  }, [isCustom, location.state])
+  }, [isShared, isCustom, encodedData, location.state])
 
   const data = isCustom ? customData : (slug ? demoData[slug] : null)
   const theme = isCustom
@@ -701,22 +739,33 @@ export default function Invitation() {
             </button>
             {showBank && (
               <div className="mt-4 space-y-3 animate-fade-in">
-                <div className="p-4 bg-gray-50 rounded-2xl">
-                  <p className="text-xs text-gray-400 mb-1">{isKorean ? '신랑측' : 'Nhà trai'}</p>
-                  <p className="font-bold text-gray-800">{data.bankGroom || 'Bank: 1234 5678 9012'}</p>
-                  <p className="text-sm text-gray-500">{data.groomParent}</p>
-                  <button onClick={() => copyToClipboard(data.bankGroom || 'Bank: 1234 5678 9012')} className="mt-2 text-xs text-red-500 font-semibold flex items-center gap-1">
-                    {copied ? <><Check className="w-3 h-3" /> {isKorean ? '복사됨' : 'Đã sao chép'}</> : <><Copy className="w-3 h-3" /> {isKorean ? '복사' : 'Sao chép'}</>}
-                  </button>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-2xl">
-                  <p className="text-xs text-gray-400 mb-1">{isKorean ? '신부측' : 'Nhà gái'}</p>
-                  <p className="font-bold text-gray-800">{data.bankBride || 'Bank: 9876 5432 1098'}</p>
-                  <p className="text-sm text-gray-500">{data.brideParent}</p>
-                  <button onClick={() => copyToClipboard(data.bankBride || 'Bank: 9876 5432 1098')} className="mt-2 text-xs text-red-500 font-semibold flex items-center gap-1">
-                    {copied ? <><Check className="w-3 h-3" /> {isKorean ? '복사됨' : 'Đã sao chép'}</> : <><Copy className="w-3 h-3" /> {isKorean ? '복사' : 'Sao chép'}</>}
-                  </button>
-                </div>
+                {([
+                  { side: 'Groom', label: isKorean ? '신랑측' : 'Nhà trai', bankText: data.bankGroom, bankId: data.bankGroomId, account: data.bankGroomAccount, holderName: data.bankGroomName, parent: data.groomParent },
+                  { side: 'Bride',  label: isKorean ? '신부측' : 'Nhà gái',  bankText: data.bankBride, bankId: data.bankBrideId, account: data.bankBrideAccount, holderName: data.bankBrideName, parent: data.brideParent },
+                ]).map(({ side, label, bankText, bankId, account, holderName, parent }) => {
+                  const hasQr = bankId && account && holderName
+                  const displayText = bankText || (hasQr ? `${VN_BANKS.find(b=>b.id===bankId)?.short || ''}: ${account}` : 'Bank: 1234 5678 9012')
+                  return (
+                    <div key={side} className="p-4 bg-gray-50 rounded-2xl">
+                      <p className="text-xs text-gray-400 mb-2">{label}</p>
+                      {hasQr && (
+                        <div className="flex justify-center mb-3">
+                          <img
+                            src={vietQrUrl(bankId!, account!, holderName!)}
+                            alt="VietQR"
+                            className="w-40 h-40 object-contain rounded-xl border border-gray-100 bg-white"
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                          />
+                        </div>
+                      )}
+                      <p className="font-bold text-gray-800 text-sm">{displayText}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{parent}</p>
+                      <button onClick={() => copyToClipboard(account || displayText)} className="mt-2 text-xs text-red-500 font-semibold flex items-center gap-1">
+                        {copied ? <><Check className="w-3 h-3" /> {isKorean ? '복사됨' : 'Đã sao chép'}</> : <><Copy className="w-3 h-3" /> {isKorean ? '복사' : 'Sao chép số TK'}</>}
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </AnimatedSection>
@@ -817,10 +866,15 @@ export default function Invitation() {
                 />
               </div>
               <p className="font-bold text-gray-800 text-sm mb-1">Chia sẻ qua mã QR</p>
-              {isCustom && (
+              {isCustom && !isShared && (
                 <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3 leading-relaxed">
                   ⚠️ Link này chỉ hoạt động trên thiết bị này.<br />
                   Nâng cấp cao cấp để có link chia sẻ vĩnh viễn.
+                </p>
+              )}
+              {isShared && (
+                <p className="text-[11px] text-green-600 bg-green-50 rounded-lg px-3 py-2 mb-3 leading-relaxed">
+                  ✅ Link này hoạt động trên mọi thiết bị.
                 </p>
               )}
               <p className="text-xs text-gray-400 mb-4 break-all">{window.location.href}</p>
