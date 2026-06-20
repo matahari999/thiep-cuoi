@@ -134,6 +134,7 @@ export default function Create() {
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [toast, setToast] = useState('')
 
   const showToast = (msg: string) => {
@@ -146,7 +147,14 @@ export default function Create() {
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      update('heroPhoto', await compressImage(file))
+      setUploading(true)
+      try {
+        update('heroPhoto', await compressImage(file))
+      } catch {
+        showToast('Không thể tải ảnh. Thử ảnh khác.')
+      } finally {
+        setUploading(false)
+      }
     }
     if (e.target) e.target.value = ''
   }
@@ -154,7 +162,11 @@ export default function Create() {
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
-    const urls = await Promise.all(files.map(compressImage))
+    setUploading(true)
+    const results = await Promise.allSettled(files.map(compressImage))
+    const urls = results.filter(r => r.status === 'fulfilled').map(r => (r as PromiseFulfilledResult<string>).value)
+    setUploading(false)
+    if (urls.length === 0) { showToast('Không thể tải ảnh. Thử ảnh khác.'); return }
     const newGallery = [...form.gallery]
     let urlIdx = 0
     for (let i = 0; i < newGallery.length && urlIdx < urls.length; i++) {
@@ -346,7 +358,7 @@ export default function Create() {
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                       <Upload className="w-10 h-10 mb-3 group-hover:text-red-400 transition-colors" />
                       <span className="text-sm font-medium">Nhấn để tải ảnh chính lên</span>
-                      <span className="text-xs mt-1">Tỷ lệ 3:4 khuyến nghị, tối đa 5MB</span>
+                      <span className="text-xs mt-1">Tỷ lệ 3:4 khuyến nghị</span>
                     </div>
                   )}
                 </div>
@@ -391,13 +403,14 @@ export default function Create() {
 
             <div className="mt-8 flex gap-3">
               <button onClick={() => { if (hasAnyPhoto) setStep(3); else setStep(1) }}
-                className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-200 transition-all">
+                disabled={uploading}
+                className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-200 disabled:opacity-50 transition-all">
                 {hasAnyPhoto ? 'Bỏ qua' : '← Quay lại'}
               </button>
               <button onClick={() => hasAnyPhoto ? setStep(3) : heroInputRef.current?.click()}
-                disabled={!hasAnyPhoto}
+                disabled={!hasAnyPhoto || uploading}
                 className="flex-1 py-4 bg-red-500 disabled:bg-gray-300 text-white rounded-2xl font-bold text-sm hover:bg-red-600 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
-                Xem trước <ArrowRight className="w-4 h-4" />
+                {uploading ? 'Đang nén ảnh...' : <> Xem trước <ArrowRight className="w-4 h-4" /> </>}
               </button>
             </div>
           </div>
