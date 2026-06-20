@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { Upload, Image, ArrowLeft, ArrowRight, Sparkles, Heart, Check, Camera, Trash2, Home, AlertCircle } from 'lucide-react'
-import { templateCategories } from '../lib/templates'
+import { templateCategories, getCategoryForTemplate } from '../lib/templates'
 import { DateSelect, TimeSelect } from '../components/DateTimePicker'
 
 interface FormData {
@@ -64,13 +64,19 @@ function formatDate(v: string): string { return v }
 
 export default function Create() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [step, setStep] = useState(1)
   const heroInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
-  const initialCat = templateCategories.length > 0 ? templateCategories[0].id : ''
-  const initialTmpl = templateCategories.length > 0 && templateCategories[0].templates.length > 0
+  const defaultCat = templateCategories.length > 0 ? templateCategories[0].id : ''
+  const defaultTmpl = templateCategories.length > 0 && templateCategories[0].templates.length > 0
     ? templateCategories[0].templates[0].id : ''
+
+  const presetTmpl = searchParams.get('template') ?? ''
+  const presetCat = getCategoryForTemplate(presetTmpl)?.id ?? ''
+  const initialTmpl = presetTmpl && presetCat ? presetTmpl : defaultTmpl
+  const initialCat = presetTmpl && presetCat ? presetCat : defaultCat
 
   const [form, setForm] = useState<FormData>({
     groom: '', bride: '',

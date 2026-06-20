@@ -60,9 +60,10 @@ for (const t of allTemplates) {
   }
 }
 
-function getDday(targetDate: string): { days: number, hours: number } {
+function getDday(targetDate: string, targetTime?: string): { days: number, hours: number } {
   const [d, m, y] = targetDate.split('/').map(Number)
-  const target = new Date(y, m - 1, d)
+  const [h, min] = (targetTime || '00:00').split(':').map(Number)
+  const target = new Date(y, m - 1, d, h || 0, min || 0)
   const now = new Date()
   const diff = target.getTime() - now.getTime()
   if (diff <= 0) return { days: 0, hours: 0 }
@@ -245,7 +246,7 @@ export default function Invitation() {
     return () => clearInterval(timer)
   }, [hasSlideshow, heroPhotos.length])
 
-  const dday = data ? getDday(data.date) : { days: 0, hours: 0 }
+  const dday = data ? getDday(data.date, data.time) : { days: 0, hours: 0 }
   const isKorean = false
   const colorClass = theme?.accent || 'text-red-500'
   const bgColorClass = colorClass.replace('text-', 'bg-')
@@ -394,6 +395,8 @@ export default function Invitation() {
     )
   }
 
+  const isDemo = !isCustom
+
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center print:bg-white">
       <AnimatedPattern id={theme.pattern} color={theme.patternColor} />
@@ -418,8 +421,22 @@ export default function Invitation() {
           </button>
         </div>
 
+        {/* Demo banner */}
+        {isDemo && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-3 flex items-center justify-between print-hidden">
+            <div>
+              <p className="text-[10px] text-gray-400 font-medium">Đây là mẫu demo · {theme.name}</p>
+              <p className="text-xs text-gray-600">Tạo thiệp cưới của bạn miễn phí</p>
+            </div>
+            <Link to={`/create?template=${slug}`}
+              className="shrink-0 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-all">
+              Dùng mẫu này →
+            </Link>
+          </div>
+        )}
+
         {/* Music button */}
-        <button onClick={toggleMusic} className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all print-hidden">
+        <button onClick={toggleMusic} className={`fixed z-50 w-12 h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all print-hidden ${isDemo ? 'bottom-20 right-4' : 'bottom-6 right-6'}`}>
           {musicOn ? <Music2 className={`w-5 h-5 ${colorClass}`} /> : <Music className="w-5 h-5 text-gray-400" />}
         </button>
 
