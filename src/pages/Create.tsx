@@ -213,7 +213,6 @@ export default function Create() {
   }
 
   const canSubmitStep1 = form.groom && form.bride && form.date && form.venue
-  const hasAnyPhoto = form.heroPhoto || form.gallery.some(g => g)
 
   const generate = async () => {
     setSaving(true)
