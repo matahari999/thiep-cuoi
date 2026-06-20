@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Love Wedding Gallery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <style>
+        .gallery-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; padding: 20px; }
+        .gallery-item { cursor: pointer; overflow: hidden; border-radius: 8px; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+    <header class="p-10 text-center">
+        <h1 class="text-4xl font-serif italic">Simple Love Gallery</h1>
+    </header>
+
+    <main class="gallery-container" id="gallery">
+        <!-- Gallery items will be injected here -->
+    </main>
+
+    <div id="modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-50">
+        <img id="modal-img" class="max-h-full max-w-full rounded-lg" src="" alt="Full view">
+    </div>
+
+    <script>
+        const gallery = document.getElementById('gallery');
+        const modal = document.getElementById('modal');
+        const modalImg = document.getElementById('modal-img');
+
+        // 이미지 파일 리스트 (수동 설정 혹은 서버측 연동)
+        const images = Array.from({length: 20}, (_, i) => `photos/gallery-${i + 1}.jpg`);
+
+        images.forEach((src, index) => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            div.innerHTML = `<img src="${src}" class="w-full h-64 object-cover hover:scale-105 transition-transform duration-500" alt="Wedding photo ${index + 1}">`;
+            
+            div.onclick = () => {
+                modalImg.src = src;
+                modal.classList.remove('hidden');
+            };
+            gallery.appendChild(div);
+        });
+
+        modal.onclick = () => modal.classList.add('hidden');
+    </script>
+</body>
+</html>
