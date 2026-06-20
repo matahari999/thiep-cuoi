@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   Heart, Upload, Image, ArrowLeft, ArrowRight, Sparkles,
-  Check, Camera, Trash2, Home
+  Check, Camera, Trash2, Home, AlertCircle
 } from 'lucide-react'
 import { templateCategories } from '../lib/templates'
 
@@ -64,13 +64,19 @@ export default function Create() {
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [toast, setToast] = useState('')
+
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
 
   const update = (field: keyof FormData, value: string) => setForm(prev => ({ ...prev, [field]: value }))
 
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { alert('Ảnh phải dưới 5MB'); return }
+      if (file.size > 5 * 1024 * 1024) { showToast('Ảnh phải dưới 5MB'); return }
       update('heroPhoto', await readFileAsDataURL(file))
     }
     if (e.target) e.target.value = ''
@@ -80,7 +86,7 @@ export default function Create() {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
     const allowed = files.filter(f => f.size <= 5 * 1024 * 1024)
-    if (allowed.length !== files.length) alert('Một số ảnh quá 5MB đã bị bỏ qua')
+    if (allowed.length !== files.length) showToast('Một số ảnh quá 5MB đã bị bỏ qua')
     const urls = await Promise.all(allowed.map(readFileAsDataURL))
     const newGallery = [...form.gallery]
     let urlIdx = 0
@@ -105,7 +111,7 @@ export default function Create() {
     input.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (!file) return
-      if (file.size > 5 * 1024 * 1024) { alert('Ảnh phải dưới 5MB'); return }
+      if (file.size > 5 * 1024 * 1024) { showToast('Ảnh phải dưới 5MB'); return }
       const url = await readFileAsDataURL(file)
       const newGallery = [...form.gallery]
       newGallery[idx] = url
@@ -154,6 +160,12 @@ export default function Create() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-rose-50">
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 px-4 py-3 bg-gray-900 text-white text-sm rounded-2xl shadow-xl animate-fade-in">
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          {toast}
+        </div>
+      )}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/20">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-all">
