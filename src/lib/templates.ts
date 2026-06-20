@@ -110,19 +110,6 @@ export const templateCategories: TemplateCategory[] = [
       { id: 'truc-dong', name: 'Trống Đồng', nameEn: 'Bronze Drum', gradient: 'from-teal-800 via-emerald-700 to-amber-600', cardBg: 'bg-gradient-to-br from-teal-800 via-emerald-700 to-amber-600', accent: 'text-amber-300', fontColor: 'text-white', fontColorSecondary: 'text-teal-200', icon: '🪘', badgeColor: 'bg-teal-100 text-teal-700', pattern: 'waves-ripple', patternColor: '#6ee7b7' },
     ]
   },
-  {
-    id: 'k-wedding',
-    name: 'Phong Cách Hàn',
-    nameEn: 'Korean Style',
-    desc: 'Thư pháp tinh tế, tối giản hiện đại, hanbok truyền thống — phong cách thiệp cưới Hàn Quốc đang được yêu thích',
-    icon: '🌸',
-    templates: [
-      { id: 'k-calligraphy', name: 'Thư Pháp', nameEn: 'K-Calligraphy', gradient: 'from-stone-50 via-white to-amber-50', cardBg: 'bg-gradient-to-br from-stone-50 via-white to-amber-50', accent: 'text-amber-700', fontColor: 'text-gray-900', fontColorSecondary: 'text-stone-500', icon: '🖋️', badgeColor: 'bg-amber-100 text-amber-700', pattern: 'stars-dust',    patternColor: '#d4b896' },
-      { id: 'k-minimal', name: 'Tối Giản Hàn', nameEn: 'K-Minimal', gradient: 'from-gray-50 via-white to-gray-50', cardBg: 'bg-gradient-to-br from-gray-50 via-white to-gray-50', accent: 'text-gray-700', fontColor: 'text-gray-900', fontColorSecondary: 'text-gray-400', icon: '▫️', badgeColor: 'bg-gray-100 text-gray-700', pattern: 'waves-sine',   patternColor: '#9ca3af' },
-      { id: 'k-navy-gold', name: 'Navy & Vàng', nameEn: 'Navy & Gold', gradient: 'from-blue-900 via-blue-800 to-amber-600', cardBg: 'bg-gradient-to-br from-blue-900 via-blue-800 to-amber-600', accent: 'text-amber-300', fontColor: 'text-white', fontColorSecondary: 'text-blue-200', icon: '💙', badgeColor: 'bg-blue-100 text-blue-700', pattern: 'stars-twinkle', patternColor: '#fbbf24' },
-      { id: 'k-hanbok', name: 'Hanbok Truyền Thống', nameEn: 'K-Traditional', gradient: 'from-rose-600 via-blue-500 to-gold-400', cardBg: 'bg-gradient-to-br from-rose-600 via-blue-500 to-yellow-400', accent: 'text-yellow-300', fontColor: 'text-white', fontColorSecondary: 'text-rose-200', icon: '🪭', badgeColor: 'bg-rose-100 text-rose-700', pattern: 'geo-heart',    patternColor: '#fde047' },
-    ]
-  }
 ]
 
 export function getTemplateById(id: string): TemplateTheme | undefined {
