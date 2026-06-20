@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { AnimatedPattern } from '../components/AnimatedPattern'
 import { useParams, Link } from 'react-router-dom'
 import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2, Copy, Check, MessageCircle, Users, Printer, Play, Pause, QrCode, MessageSquare } from 'lucide-react'
 import { getTemplateById, allTemplates } from '../lib/templates'
@@ -166,24 +167,6 @@ function DecorativeWaves() {
   )
 }
 
-function PetalFall() {
-  const petals = Array.from({ length: 12 }, (_, i) => ({
-    id: i, left: Math.random() * 100, delay: Math.random() * 8,
-    duration: 6 + Math.random() * 6, size: 10 + Math.random() * 16, opacity: 0.2 + Math.random() * 0.3,
-  }))
-  return (
-    <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden print-hidden">
-      {petals.map(p => (
-        <div key={p.id} className="absolute -top-6 animate-petal-fall"
-          style={{ left: `${p.left}%`, animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s`, width: p.size, height: p.size * 1.3, opacity: p.opacity }}>
-          <svg viewBox="0 0 20 26" className="w-full h-full" fill="currentColor" color="#ef9a9a">
-            <path d="M10 0C10 0 20 8 20 16C20 24 12 26 10 26C8 26 0 24 0 16C0 8 10 0 10 0Z" />
-          </svg>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 function parseCustomDate(dateStr: string): string {
   if (!dateStr) return 'Chưa rõ'
@@ -364,7 +347,7 @@ export default function Invitation() {
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center print:bg-white">
-      <PetalFall />
+      <AnimatedPattern id={theme.pattern} color={theme.patternColor} />
 
       <div className="w-full max-w-md mx-auto bg-white min-h-screen relative print:max-w-full print:shadow-none">
 

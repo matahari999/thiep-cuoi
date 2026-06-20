@@ -131,6 +131,75 @@ body {
   animation: gradientShift 4s ease infinite;
 }
 
+/* ── Pattern keyframes ───────────────────────────────────────────────────── */
+@keyframes waveSineMove {
+  0%   { transform: translateX(0px); }
+  100% { transform: translateX(60px); }
+}
+@keyframes waveOceanRise {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-20px); }
+}
+@keyframes waveRippleExpand {
+  0%   { width: 8px; height: 8px; opacity: 0.5; }
+  100% { width: 240px; height: 240px; opacity: 0; }
+}
+@keyframes bambooSway {
+  from { transform: rotate(-4deg); }
+  to   { transform: rotate(4deg); }
+}
+@keyframes leafFall {
+  0%   { transform: translateY(-30px) rotate(0deg) translateX(0); opacity: 0; }
+  8%   { opacity: 0.5; }
+  45%  { transform: translateY(45vh) rotate(210deg) translateX(28px); }
+  100% { transform: translateY(105vh) rotate(500deg) translateX(-12px); opacity: 0; }
+}
+@keyframes blossomPulse {
+  0%, 100% { transform: scale(1);   opacity: 0.2; }
+  50%       { transform: scale(1.5); opacity: 0.5; }
+}
+@keyframes rosePetalFall {
+  0%   { transform: translateY(-32px) rotate(0deg) scale(1); opacity: 0; }
+  12%  { opacity: 0.35; }
+  100% { transform: translateY(105vh) rotate(600deg) scale(0.5); opacity: 0; }
+}
+@keyframes lotusExpand {
+  0%   { transform: scale(0.05); opacity: 0.6; }
+  60%  { opacity: 0.3; }
+  100% { transform: scale(4);    opacity: 0; }
+}
+@keyframes starTwinkle {
+  0%, 100% { transform: scale(0.5); opacity: 0.2; }
+  50%       { transform: scale(1.5); opacity: 1; }
+}
+@keyframes shootingStarMove {
+  0%        { transform: rotate(45deg) translate(0, 0); opacity: 0; }
+  5%, 12%   { opacity: 0.8; }
+  38%       { transform: rotate(45deg) translate(360px, 0); opacity: 0; }
+  100%      { transform: rotate(45deg) translate(360px, 0); opacity: 0; }
+}
+@keyframes dustFloat {
+  0%   { transform: translateY(0) scale(1) translateX(0); opacity: 0.5; }
+  50%  { transform: translateY(-50px) scale(1.1) translateX(8px); opacity: 0.3; }
+  100% { transform: translateY(-100px) scale(0.4) translateX(-4px); opacity: 0; }
+}
+@keyframes diamondFloat {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.3; }
+  85%  { opacity: 0.2; }
+  100% { transform: translateY(-80px) rotate(180deg); opacity: 0; }
+}
+@keyframes heartRise {
+  0%   { transform: translateY(0) scale(1) translateX(0); opacity: 0.5; }
+  30%  { transform: translateY(-30vh) scale(0.9) translateX(12px); opacity: 0.35; }
+  65%  { transform: translateY(-65vh) scale(0.8) translateX(-8px); opacity: 0.2; }
+  100% { transform: translateY(-105vh) scale(0.5) translateX(5px); opacity: 0; }
+}
+@keyframes circleRingExpand {
+  0%   { width: 8px; height: 8px; opacity: 0.5; }
+  100% { width: 200px; height: 200px; opacity: 0; }
+}
+
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
