@@ -171,10 +171,16 @@ function DecorativeWaves() {
 function parseCustomDate(dateStr: string): string {
   if (!dateStr) return 'Chưa rõ'
   if (dateStr.includes('/')) return dateStr
+  if (/^\d{8}$/.test(dateStr)) {
+    return `${dateStr.slice(6,8)}/${dateStr.slice(4,6)}/${dateStr.slice(0,4)}`
+  }
   try {
     const d = new Date(dateStr)
-    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`
-  } catch { return dateStr }
+    if (!isNaN(d.getTime())) {
+      return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`
+    }
+  } catch { /* fall through */ }
+  return dateStr
 }
 
 export default function Invitation() {

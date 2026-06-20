@@ -99,8 +99,14 @@ function TimeSelect({ value, onChange, className }: { value: string; onChange: (
 function formatDate(iso: string): string {
   if (!iso) return ''
   if (iso.includes('/')) return iso
-  const [y, m, d] = iso.split('-')
-  return `${d}/${m}/${y}`
+  if (iso.includes('-')) {
+    const [y, m, d] = iso.split('-')
+    if (y && m && d) return `${d}/${m}/${y}`
+  }
+  if (iso.length === 8 && /^\d{8}$/.test(iso)) {
+    return `${iso.slice(6,8)}/${iso.slice(4,6)}/${iso.slice(0,4)}`
+  }
+  return iso
 }
 
 export default function Create() {
