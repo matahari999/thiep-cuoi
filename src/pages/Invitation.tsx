@@ -196,10 +196,12 @@ export default function Invitation() {
         const raw = localStorage.getItem('thiepcuoi_custom')
         if (raw) {
           const parsed = JSON.parse(raw)
+          const dateStr = typeof parsed.date === 'string' ? parsed.date : ''
           setCustomData({
             ...parsed,
+            template: parsed.template || 'classic-red',
             mapUrl: parsed.mapUrl || 'https://maps.google.com/',
-            date: parsed.date.includes('/') ? parsed.date : parseCustomDate(parsed.date),
+            date: dateStr.includes('/') ? dateStr : parseCustomDate(dateStr),
             heroPhoto: parsed.heroPhoto || '/photos/hero.jpg',
             gallery: parsed.gallery?.filter(Boolean)?.length ? parsed.gallery : ['/photos/gallery-1.jpg', '/photos/gallery-2.jpg', '/photos/gallery-3.jpg', '/photos/gallery-4.jpg'],
           })
@@ -212,7 +214,9 @@ export default function Invitation() {
   }, [isCustom])
 
   const data = isCustom ? customData : (slug ? demoData[slug] : null)
-  const theme = data?.template ? (getTemplateById(data.template) || getTemplateById('classic-red')) : (slug ? getTemplateById(slug) : undefined)
+  const theme = isCustom
+    ? (getTemplateById(data?.template || '') || getTemplateById('classic-red'))
+    : (slug ? getTemplateById(slug) : undefined)
   const [musicOn, setMusicOn] = useState(false)
   const [copied, setCopied] = useState(false)
   const [guestName, setGuestName] = useState('')
