@@ -250,18 +250,20 @@ export default function Order() {
                 <div className="flex-1">
                   <label className="text-sm font-medium text-gray-700 mb-1 block">Ngày cưới *</label>
                   <input
-                    type="date"
+                    type="text"
                     value={form.date}
                     onChange={e => set('date', e.target.value)}
+                    placeholder="dd/mm/yyyy"
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
                   />
                 </div>
                 <div className="flex-1">
                   <label className="text-sm font-medium text-gray-700 mb-1 block">Giờ *</label>
                   <input
-                    type="time"
+                    type="text"
                     value={form.time}
                     onChange={e => set('time', e.target.value)}
+                    placeholder="10:00"
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
                   />
                 </div>

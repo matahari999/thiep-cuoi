@@ -34,6 +34,7 @@ function readFileAsDataURL(file: File): Promise<string> {
 
 function formatDate(iso: string): string {
   if (!iso) return ''
+  if (iso.includes('/')) return iso
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
 }
@@ -200,7 +201,8 @@ export default function Create() {
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Ngày cưới</label>
                 <input value={form.date} onChange={e => update('date', e.target.value)}
-                  type="date"
+                  type="text"
+                  placeholder="dd/mm/yyyy"
                   className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
               </div>
 
@@ -208,7 +210,8 @@ export default function Create() {
                 <div>
                   <label className="text-xs font-semibold text-gray-600 mb-1 block">Giờ</label>
                   <input value={form.time} onChange={e => update('time', e.target.value)}
-                    type="time"
+                    type="text"
+                    placeholder="10:00"
                     className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
                 </div>
                 <div>
