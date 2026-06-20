@@ -32,6 +32,30 @@ function readFileAsDataURL(file: File): Promise<string> {
   })
 }
 
+async function compressImage(file: File): Promise<string> {
+  if (file.type === 'image/gif') return readFileAsDataURL(file)
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const MAX = 1280
+      let { width, height } = img
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+        else { width = Math.round(width * MAX / height); height = MAX }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+      resolve(canvas.toDataURL('image/jpeg', 0.82))
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject() }
+    img.src = url
+  })
+}
+
 function formatDate(iso: string): string {
   if (!iso) return ''
   if (iso.includes('/')) return iso
@@ -76,8 +100,7 @@ export default function Create() {
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { showToast('Ảnh phải dưới 5MB'); return }
-      update('heroPhoto', await readFileAsDataURL(file))
+      update('heroPhoto', await compressImage(file))
     }
     if (e.target) e.target.value = ''
   }
@@ -85,9 +108,7 @@ export default function Create() {
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
-    const allowed = files.filter(f => f.size <= 5 * 1024 * 1024)
-    if (allowed.length !== files.length) showToast('Một số ảnh quá 5MB đã bị bỏ qua')
-    const urls = await Promise.all(allowed.map(readFileAsDataURL))
+    const urls = await Promise.all(files.map(compressImage))
     const newGallery = [...form.gallery]
     let urlIdx = 0
     for (let i = 0; i < newGallery.length && urlIdx < urls.length; i++) {
@@ -111,8 +132,7 @@ export default function Create() {
     input.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (!file) return
-      if (file.size > 5 * 1024 * 1024) { showToast('Ảnh phải dưới 5MB'); return }
-      const url = await readFileAsDataURL(file)
+      const url = await compressImage(file)
       const newGallery = [...form.gallery]
       newGallery[idx] = url
       setForm(prev => ({ ...prev, gallery: newGallery }))

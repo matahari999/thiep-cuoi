@@ -181,6 +181,7 @@ export default function Invitation() {
   const { slug } = useParams<{ slug: string }>()
 
   const [customData, setCustomData] = useState<InvitationData | null>(null)
+  const [customLoading, setCustomLoading] = useState(true)
   const isCustom = slug === 'custom-invitation'
 
   useEffect(() => {
@@ -198,6 +199,9 @@ export default function Invitation() {
           })
         }
       } catch {}
+      setCustomLoading(false)
+    } else {
+      setCustomLoading(false)
     }
   }, [isCustom])
 
@@ -343,6 +347,14 @@ export default function Invitation() {
     const url = encodeURIComponent(window.location.href)
     const title = encodeURIComponent(`Thiệp cưới - ${data?.groom} & ${data?.bride}`)
     window.open(`https://zalo.me/share?url=${url}&title=${title}`, '_blank')
+  }
+
+  if (customLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Heart className="w-10 h-10 text-red-300 animate-pulse" />
+      </div>
+    )
   }
 
   if (!data || !theme) {
