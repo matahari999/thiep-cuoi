@@ -3,6 +3,40 @@ import { Link } from 'react-router-dom'
 import { Heart, ArrowLeft, Check, HeartHandshake, Upload } from 'lucide-react'
 import { templateCategories, allTemplates } from '../lib/templates'
 
+const WEDDING_TIMES = ['06:00','07:00','08:00','09:00','10:00','10:30','11:00','11:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00']
+
+function DateSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [d, m, y] = value ? value.split('/') : ['', '', '']
+  const emit = (nd: string, nm: string, ny: string) => onChange(nd && nm && ny ? `${nd}/${nm}/${ny}` : '')
+  const cls = "flex-1 px-2 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all text-sm"
+  return (
+    <div className="flex gap-2">
+      <select value={d || ''} onChange={e => emit(e.target.value, m || '', y || '')} className={cls}>
+        <option value="">Ngày</option>
+        {Array.from({length: 31}, (_, i) => String(i + 1).padStart(2, '0')).map(v => <option key={v} value={v}>{v}</option>)}
+      </select>
+      <select value={m || ''} onChange={e => emit(d || '', e.target.value, y || '')} className={cls}>
+        <option value="">Tháng</option>
+        {Array.from({length: 12}, (_, i) => String(i + 1).padStart(2, '0')).map(v => <option key={v} value={v}>T.{Number(v)}</option>)}
+      </select>
+      <select value={y || ''} onChange={e => emit(d || '', m || '', e.target.value)} className={cls}>
+        <option value="">Năm</option>
+        {[2025,2026,2027,2028,2029,2030].map(v => <option key={v} value={String(v)}>{v}</option>)}
+      </select>
+    </div>
+  )
+}
+
+function TimeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all text-sm">
+      <option value="">Chọn giờ</option>
+      {WEDDING_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+    </select>
+  )
+}
+
 const basePrices: Record<string, number> = {
   'classic-red': 299000, 'dong-son': 349000, 'hoa-sen': 349000, 'song-hy': 299000,
   'minimal-beige': 349000, 'minimal-black': 399000, 'sage-green': 349000,
@@ -246,27 +280,13 @@ export default function Order() {
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Ngày cưới *</label>
-                  <input
-                    type="text"
-                    value={form.date}
-                    onChange={e => set('date', e.target.value)}
-                    placeholder="dd/mm/yyyy"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Giờ *</label>
-                  <input
-                    type="text"
-                    value={form.time}
-                    onChange={e => set('time', e.target.value)}
-                    placeholder="10:00"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
-                  />
-                </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Ngày cưới *</label>
+                <DateSelect value={form.date} onChange={v => set('date', v)} />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Giờ *</label>
+                <TimeSelect value={form.time} onChange={v => set('time', v)} />
               </div>
 
               <div>

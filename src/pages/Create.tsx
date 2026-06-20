@@ -56,6 +56,42 @@ async function compressImage(file: File): Promise<string> {
   })
 }
 
+const WEDDING_TIMES = ['06:00','07:00','08:00','09:00','10:00','10:30','11:00','11:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00']
+
+function DateSelect({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
+  const [d, m, y] = value ? value.split('/') : ['', '', '']
+  const emit = (nd: string, nm: string, ny: string) => onChange(nd && nm && ny ? `${nd}/${nm}/${ny}` : '')
+  return (
+    <div className={`flex gap-2 ${className || ''}`}>
+      <select value={d || ''} onChange={e => emit(e.target.value, m || '', y || '')}
+        className="flex-1 px-2 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none text-sm">
+        <option value="">Ngày</option>
+        {Array.from({length: 31}, (_, i) => String(i + 1).padStart(2, '0')).map(v => <option key={v} value={v}>{v}</option>)}
+      </select>
+      <select value={m || ''} onChange={e => emit(d || '', e.target.value, y || '')}
+        className="flex-1 px-2 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none text-sm">
+        <option value="">Tháng</option>
+        {Array.from({length: 12}, (_, i) => String(i + 1).padStart(2, '0')).map(v => <option key={v} value={v}>T.{Number(v)}</option>)}
+      </select>
+      <select value={y || ''} onChange={e => emit(d || '', m || '', e.target.value)}
+        className="flex-1 px-2 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none text-sm">
+        <option value="">Năm</option>
+        {[2025,2026,2027,2028,2029,2030].map(v => <option key={v} value={String(v)}>{v}</option>)}
+      </select>
+    </div>
+  )
+}
+
+function TimeSelect({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      className={`w-full px-3 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none text-sm ${className || ''}`}>
+      <option value="">Chọn giờ</option>
+      {WEDDING_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+    </select>
+  )
+}
+
 function formatDate(iso: string): string {
   if (!iso) return ''
   if (iso.includes('/')) return iso
@@ -155,13 +191,18 @@ export default function Create() {
   const generate = async () => {
     setSaving(true)
     await new Promise(r => setTimeout(r, 500))
-    localStorage.setItem('thiepcuoi_custom', JSON.stringify({
-      ...form,
-      _created: Date.now(),
-    }))
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => navigate('/custom-invitation'), 1200)
+    try {
+      localStorage.setItem('thiepcuoi_custom', JSON.stringify({
+        ...form,
+        _created: Date.now(),
+      }))
+      setSaving(false)
+      setSaved(true)
+      setTimeout(() => navigate('/custom-invitation'), 1200)
+    } catch {
+      setSaving(false)
+      showToast('Lỗi lưu dữ liệu. Vui lòng thử lại.')
+    }
   }
 
   if (saved) {
@@ -232,19 +273,13 @@ export default function Create() {
 
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Ngày cưới</label>
-                <input value={form.date} onChange={e => update('date', e.target.value)}
-                  type="text"
-                  placeholder="dd/mm/yyyy"
-                  className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                <DateSelect value={form.date} onChange={v => update('date', v)} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-gray-600 mb-1 block">Giờ</label>
-                  <input value={form.time} onChange={e => update('time', e.target.value)}
-                    type="text"
-                    placeholder="10:00"
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                  <TimeSelect value={form.time} onChange={v => update('time', v)} />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-600 mb-1 block">Địa điểm</label>

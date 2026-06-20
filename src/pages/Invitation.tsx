@@ -206,7 +206,7 @@ export default function Invitation() {
   }, [isCustom])
 
   const data = isCustom ? customData : (slug ? demoData[slug] : null)
-  const theme = data?.template ? (getTemplateById(data.template) || getTemplateById(isCustom ? 'classic-tropical' : '')) : (slug ? getTemplateById(slug) : undefined)
+  const theme = data?.template ? (getTemplateById(data.template) || getTemplateById('classic-red')) : (slug ? getTemplateById(slug) : undefined)
   const [musicOn, setMusicOn] = useState(false)
   const [copied, setCopied] = useState(false)
   const [guestName, setGuestName] = useState('')
