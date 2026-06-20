@@ -190,23 +190,26 @@ export default function Invitation() {
   const [customLoading, setCustomLoading] = useState(true)
   const isCustom = slug === 'custom-invitation'
 
+  const [debugInfo, setDebugInfo] = useState('')
+
   useEffect(() => {
     if (isCustom) {
       try {
         const raw = localStorage.getItem('thiepcuoi_custom')
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          const dateStr = typeof parsed.date === 'string' ? parsed.date : ''
-          setCustomData({
-            ...parsed,
-            template: parsed.template || 'classic-red',
-            mapUrl: parsed.mapUrl || 'https://maps.google.com/',
-            date: dateStr.includes('/') ? dateStr : parseCustomDate(dateStr),
-            heroPhoto: parsed.heroPhoto || '/photos/hero.jpg',
-            gallery: parsed.gallery?.filter(Boolean)?.length ? parsed.gallery : ['/photos/gallery-1.jpg', '/photos/gallery-2.jpg', '/photos/gallery-3.jpg', '/photos/gallery-4.jpg'],
-          })
-        }
-      } catch {}
+        if (!raw) { setDebugInfo('localStorage trống — chưa tạo thiệp'); setCustomLoading(false); return }
+        const parsed = JSON.parse(raw)
+        const dateStr = typeof parsed.date === 'string' ? parsed.date : ''
+        setCustomData({
+          ...parsed,
+          template: parsed.template || 'classic-red',
+          mapUrl: parsed.mapUrl || 'https://maps.google.com/',
+          date: dateStr.includes('/') ? dateStr : parseCustomDate(dateStr),
+          heroPhoto: parsed.heroPhoto || '/photos/hero.jpg',
+          gallery: parsed.gallery?.filter(Boolean)?.length ? parsed.gallery : ['/photos/gallery-1.jpg', '/photos/gallery-2.jpg', '/photos/gallery-3.jpg', '/photos/gallery-4.jpg'],
+        })
+      } catch (e) {
+        setDebugInfo('Lỗi đọc dữ liệu: ' + String(e))
+      }
       setCustomLoading(false)
     } else {
       setCustomLoading(false)
@@ -369,12 +372,24 @@ export default function Invitation() {
 
   if (!data || !theme) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center max-w-sm">
           <Heart className="w-12 h-12 text-red-300 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Không tìm thấy thiệp cưới</h1>
-          <p className="text-gray-500 mb-4">Thiệp không tồn tại hoặc đã bị xóa.</p>
-          <Link to="/" className="text-red-500 font-semibold text-sm hover:underline">← Về trang chủ</Link>
+          {isCustom ? (
+            <>
+              <p className="text-gray-500 mb-2">Thiệp chưa được tạo hoặc dữ liệu đã xóa.</p>
+              {debugInfo && <p className="text-xs text-orange-600 mb-3 bg-orange-50 p-3 rounded-xl text-left">{debugInfo}</p>}
+              <Link to="/create" className="inline-block mt-2 px-6 py-3 bg-red-500 text-white font-bold rounded-2xl text-sm hover:bg-red-600">
+                Tạo thiệp mới →
+              </Link>
+            </>
+          ) : (
+            <p className="text-gray-500 mb-4">Thiệp không tồn tại hoặc đã bị xóa.</p>
+          )}
+          <div className="mt-4">
+            <Link to="/" className="text-red-500 font-semibold text-sm hover:underline">← Về trang chủ</Link>
+          </div>
         </div>
       </div>
     )
