@@ -112,6 +112,23 @@ export const templateCategories: TemplateCategory[] = [
   },
 ]
 
+// 시범 적용 3개 템플릿의 구조적 SVG 프레임 장식 매핑
+// song-hy: 베트남 골드 (囍 메달리온 + trầu cau 빈랑잎 덩굴)
+// minimal-beige: 한국 라인아트 (단청/창살 느낌의 가는 선)
+// romantic-pink: 서양 수채화 (모서리 꽃다발 얼룩 + 가지)
+export const frameVariantByTemplate: Record<string, 'korean-lineart' | 'vietnamese-gold' | 'western-watercolor'> = {
+  'song-hy': 'vietnamese-gold',
+  'minimal-beige': 'korean-lineart',
+  'romantic-pink': 'western-watercolor',
+}
+
+// 프레임 라인/메달리온에 쓰일 강조색 (테마별로 다소 다르게 — 너무 튀지 않도록 톤온톤)
+export const frameColorByTemplate: Record<string, string> = {
+  'song-hy': '#f0d488',
+  'minimal-beige': '#e7e2d8',
+  'romantic-pink': '#fbcfe8',
+}
+
 export function getTemplateById(id: string): TemplateTheme | undefined {
   for (const cat of templateCategories) {
     const t = cat.templates.find(t => t.id === id)

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatedPattern } from '../components/AnimatedPattern'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2, Copy, Check, MessageCircle, Users, Printer, Play, Pause, QrCode, MessageSquare } from 'lucide-react'
-import { getTemplateById, allTemplates } from '../lib/templates'
+import { getTemplateById, allTemplates, frameVariantByTemplate, frameColorByTemplate } from '../lib/templates'
+import FrameDecoration from '../components/FrameDecoration'
 import { QRCodeSVG } from 'qrcode.react'
 import { vietQrUrl, VN_BANKS } from '../lib/vietqr'
 import { supabase } from '../lib/supabase'
@@ -597,6 +598,14 @@ export default function Invitation() {
                 />
               ))}
             </div>
+          )}
+
+          {/* 구조적 SVG 프레임 장식 (한국 라인아트 / 베트남 골드 / 서양 수채화) */}
+          {frameVariantByTemplate[theme.id] && (
+            <FrameDecoration
+              variant={frameVariantByTemplate[theme.id]}
+              color={frameColorByTemplate[theme.id]}
+            />
           )}
 
           <Link to="/" className="absolute top-12 left-4 z-30 w-9 h-9 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/40 transition-colors print-hidden">
