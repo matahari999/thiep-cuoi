@@ -5,6 +5,7 @@ import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2,
 import { getTemplateById, allTemplates } from '../lib/templates'
 import { QRCodeSVG } from 'qrcode.react'
 import { vietQrUrl, VN_BANKS } from '../lib/vietqr'
+import { supabase } from '../lib/supabase'
 
 function decodeShareUrl(encoded: string): Partial<InvitationData> | null {
   try {
@@ -266,6 +267,7 @@ export default function Invitation() {
   const [guestCount, setGuestCount] = useState('1')
   const [guestMessage, setGuestMessage] = useState('')
   const [rsvpSent, setRsvpSent] = useState(false)
+  const [rsvpSubmitting, setRsvpSubmitting] = useState(false)
   const [showBank, setShowBank] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -399,6 +401,23 @@ export default function Invitation() {
     const url = encodeURIComponent(window.location.href)
     const title = encodeURIComponent(`Thiệp cưới - ${data?.groom} & ${data?.bride}`)
     window.open(`https://zalo.me/share?url=${url}&title=${title}`, '_blank')
+  }
+
+  const submitRsvp = async () => {
+    if (!guestName) return
+    setRsvpSubmitting(true)
+    if (supabase) {
+      await supabase.from('rsvp').insert({
+        invitation_ref: encodedData ?? slug ?? 'unknown',
+        groom: data?.groom ?? '',
+        bride: data?.bride ?? '',
+        guest_name: guestName,
+        guest_count: parseInt(guestCount) || 1,
+        message: guestMessage,
+      })
+    }
+    setRsvpSubmitting(false)
+    setRsvpSent(true)
   }
 
   if (customLoading) {
@@ -786,9 +805,9 @@ export default function Invitation() {
                   </select>
                 </div>
                 <textarea value={guestMessage} onChange={e => setGuestMessage(e.target.value)} placeholder="Lời chúc" rows={3} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm resize-none" />
-                <button onClick={() => guestName && setRsvpSent(true)} disabled={!guestName}
+                <button onClick={submitRsvp} disabled={!guestName || rsvpSubmitting}
                   className={`w-full py-4 rounded-2xl font-bold text-sm text-white transition-all disabled:bg-gray-300 ${bgColorClass || 'bg-red-500'} hover:opacity-90 flex items-center justify-center gap-2`}>
-                  <MessageCircle className="w-4 h-4" /> Gửi phản hồi
+                  <MessageCircle className="w-4 h-4" /> {rsvpSubmitting ? 'Đang gửi...' : 'Gửi phản hồi'}
                 </button>
               </div>
             )}
