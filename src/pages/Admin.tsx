@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Heart, Package, FileText, LogOut, Edit3, Eye } from 'lucide-react'
 import { templateCategories, getTemplateById, getCategoryForTemplate } from '../lib/templates'
+import { supabase } from '../lib/supabase'
 
 interface Order {
   id: string
@@ -14,14 +15,18 @@ interface Order {
   createdAt: string
 }
 
-const mockOrders: Order[] = [
-  { id: 'ORD-001', groom: 'Nguyễn Văn Trang', bride: 'Trần Thị Anh', date: '15/12/2026', templateId: 'classic-red', status: 'published', contact: '0909123456', createdAt: '01/06/2026' },
-  { id: 'ORD-002', groom: 'Lê Văn Minh', bride: 'Phạm Thị Hoa', date: '20/01/2027', templateId: 'minimal-beige', status: 'approved', contact: '0909988776', createdAt: '05/06/2026' },
-  { id: 'ORD-003', groom: 'Hoàng Văn Tuấn', bride: 'Ngô Thị Linh', date: '08/03/2027', templateId: 'gold-elegant', status: 'preview_sent', contact: '0909111222', createdAt: '10/06/2026' },
-  { id: 'ORD-004', groom: 'Phạm Văn Nam', bride: 'Lê Thị Hương', date: '25/06/2027', templateId: 'ao-dai', status: 'in_progress', contact: '0909333444', createdAt: '15/06/2026' },
-  { id: 'ORD-005', groom: 'Trần Văn Đức', bride: 'Nguyễn Thị Mai', date: '10/07/2027', templateId: 'black-gold', status: 'pending', contact: '0909555666', createdAt: '18/06/2026' },
-  { id: 'ORD-006', groom: 'Vũ Hoàng Long', bride: 'Đinh Thị Thảo', date: '15/08/2027', templateId: 'watercolor', status: 'pending', contact: '0909777888', createdAt: '20/06/2026' },
-]
+function dbToOrder(o: any): Order {
+  return {
+    id: o.id,
+    groom: o.groom,
+    bride: o.bride,
+    date: o.date ?? '',
+    templateId: o.template_id,
+    status: o.status,
+    contact: o.contact,
+    createdAt: o.created_at ? o.created_at.slice(0, 10) : '',
+  }
+}
 
 const statusLabels: Record<string, string> = {
   pending: 'Chờ xử lý',
@@ -89,9 +94,11 @@ function OrderRow({ order }: { order: Order }) {
   const template = getTemplateById(order.templateId)
   const cat = getCategoryForTemplate(order.templateId)
 
-  const advance = () => {
+  const advance = async () => {
     const next = nextStatus[status as keyof typeof nextStatus]
-    if (next) setStatus(next as Order['status'])
+    if (!next) return
+    if (supabase) await supabase.from('orders').update({ status: next }).eq('id', order.id)
+    setStatus(next as Order['status'])
   }
 
   return (
@@ -138,10 +145,21 @@ function OrderRow({ order }: { order: Order }) {
 }
 
 function OrderList() {
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
-  const filtered = filter === 'all' ? mockOrders : mockOrders.filter(o => o.status === filter)
 
-  const statusCounts = mockOrders.reduce((acc, o) => {
+  useEffect(() => {
+    if (!supabase) { setLoading(false); return }
+    supabase.from('orders').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setOrders(data.map(dbToOrder))
+        setLoading(false)
+      })
+  }, [])
+
+  const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter)
+  const statusCounts = orders.reduce((acc, o) => {
     acc[o.status] = (acc[o.status] || 0) + 1
     return acc
   }, {} as Record<string, number>)
@@ -151,7 +169,7 @@ function OrderList() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Đơn hàng</h1>
-          <p className="text-sm text-gray-400">Tổng: {mockOrders.length} đơn</p>
+          <p className="text-sm text-gray-400">Tổng: {orders.length} đơn</p>
         </div>
       </div>
       <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-1">
@@ -161,14 +179,17 @@ function OrderList() {
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${filter === f ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
           >
-            {f === 'all' ? `Tất cả (${mockOrders.length})` : `${statusLabels[f]} (${statusCounts[f] || 0})`}
+            {f === 'all' ? `Tất cả (${orders.length})` : `${statusLabels[f]} (${statusCounts[f] || 0})`}
           </button>
         ))}
       </div>
       <div className="space-y-4">
-        {filtered.map(o => <OrderRow key={o.id} order={o} />)}
-        {filtered.length === 0 && (
+        {loading ? (
+          <div className="text-center py-12 text-gray-400 text-sm">Đang tải...</div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">Không có đơn hàng nào.</div>
+        ) : (
+          filtered.map(o => <OrderRow key={o.id} order={o} />)
         )}
       </div>
     </div>
@@ -176,13 +197,26 @@ function OrderList() {
 }
 
 function PublishedInvitations() {
-  const published = mockOrders.filter(o => o.status === 'published')
+  const [published, setPublished] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!supabase) { setLoading(false); return }
+    supabase.from('orders').select('*').eq('status', 'published').order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setPublished(data.map(dbToOrder))
+        setLoading(false)
+      })
+  }, [])
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Thiệp đã xuất bản</h1>
       </div>
-      {published.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-12 text-gray-400 text-sm">Đang tải...</div>
+      ) : published.length === 0 ? (
         <div className="text-center py-12 text-gray-400 text-sm">Chưa có thiệp nào được xuất bản.</div>
       ) : published.map(o => {
         const template = getTemplateById(o.templateId)
