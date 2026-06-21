@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Heart, ArrowLeft, Check, HeartHandshake, Upload } from 'lucide-react'
 import { templateCategories, allTemplates } from '../lib/templates'
 import { DateSelect, TimeSelect } from '../components/DateTimePicker'
+import { supabase } from '../lib/supabase'
 
 const orderDateCls = 'flex-1 px-2 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all text-sm'
 const orderTimeCls = 'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all text-sm'
@@ -59,6 +60,7 @@ export default function Order() {
     photos: []
   })
   const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const set = (key: keyof FormData, value: any) => setForm(p => ({ ...p, [key]: value }))
 
@@ -69,7 +71,22 @@ export default function Order() {
     }))
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setSaving(true)
+    if (supabase) {
+      await supabase.from('orders').insert({
+        groom: form.groomName,
+        bride: form.brideName,
+        date: form.date,
+        time: form.time,
+        venue: form.venue,
+        map_url: form.mapUrl,
+        message: form.message,
+        contact: form.contact,
+        template_id: form.templateId,
+        addons: form.addons,
+      })
+    }
     const checkoutUrl = import.meta.env.VITE_LEMONSQUEEZY_CHECKOUT_URL
     if (checkoutUrl && !checkoutUrl.includes('YOUR-STORE')) {
       const params = new URLSearchParams({
@@ -83,6 +100,7 @@ export default function Order() {
       })
       window.open(`${checkoutUrl}?${params.toString()}`, '_blank')
     }
+    setSaving(false)
     setSubmitted(true)
   }
 
@@ -394,9 +412,10 @@ export default function Order() {
 
             <button
               onClick={handleSubmit}
-              className="mt-8 w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold text-lg transition-all shadow-lg shadow-red-200 flex items-center justify-center gap-2"
+              disabled={saving}
+              className="mt-8 w-full py-4 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-2xl font-bold text-lg transition-all shadow-lg shadow-red-200 flex items-center justify-center gap-2"
             >
-              <HeartHandshake className="w-5 h-5" /> Xác nhận đặt hàng — {formatPrice(total)}
+              {saving ? 'Đang lưu...' : <><HeartHandshake className="w-5 h-5" /> Xác nhận đặt hàng — {formatPrice(total)}</>}
             </button>
             <button onClick={() => setStep(2)} className="mt-3 w-full py-3 text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors">
               Chỉnh sửa thông tin
