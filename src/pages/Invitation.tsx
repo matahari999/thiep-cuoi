@@ -269,6 +269,7 @@ export default function Invitation() {
   const [rsvpSent, setRsvpSent] = useState(false)
   const [rsvpSubmitting, setRsvpSubmitting] = useState(false)
   const [showBank, setShowBank] = useState(false)
+  const [guestbook, setGuestbook] = useState<{ name: string; msg: string }[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const [autoScrolling, setAutoScrolling] = useState(true)
@@ -403,6 +404,16 @@ export default function Invitation() {
     window.open(`https://zalo.me/share?url=${url}&title=${title}`, '_blank')
   }
 
+  useEffect(() => {
+    if (!supabase || !data) return
+    const ref = encodedData ?? slug ?? 'unknown'
+    supabase.from('rsvp').select('guest_name, message').eq('invitation_ref', ref)
+      .order('created_at', { ascending: false }).limit(20)
+      .then(({ data: rows }) => {
+        if (rows) setGuestbook(rows.map(r => ({ name: r.guest_name, msg: r.message ?? '' })).filter(r => r.msg))
+      })
+  }, [data, encodedData, slug])
+
   const submitRsvp = async () => {
     if (!guestName) return
     setRsvpSubmitting(true)
@@ -418,6 +429,7 @@ export default function Invitation() {
     }
     setRsvpSubmitting(false)
     setRsvpSent(true)
+    if (guestMessage) setGuestbook(prev => [{ name: guestName, msg: guestMessage }, ...prev])
   }
 
   if (customLoading) {
@@ -819,11 +831,9 @@ export default function Invitation() {
           <AnimatedSection delay={600}>
             <SectionTitle icon="📖" title="Sổ lưu bút" titleEn="Guest Book" color={colorClass} />
             <div className="space-y-4">
-              {[
-                { name: 'Minh Anh', msg: 'Chúc hai bạn trăm năm hạnh phúc! 💕' },
-                { name: 'Quốc Bảo', msg: 'Mong chờ ngày vui của các bạn. Yêu thương!' },
-                { name: 'Thanh Thảo', msg: 'Hạnh phúc ngập tràn nhé các bạn! 🌸' },
-              ].map((g, i) => (
+              {guestbook.length === 0 ? (
+                <p className="text-center text-sm text-gray-400 py-4">Chưa có lời chúc nào. Hãy là người đầu tiên!</p>
+              ) : guestbook.map((g, i) => (
                 <div key={i} className="bg-gray-50 rounded-2xl p-4 hover:bg-red-50 transition-colors">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
