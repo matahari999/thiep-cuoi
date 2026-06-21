@@ -110,6 +110,8 @@ export default function Create() {
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [toast, setToast] = useState('')
+  const [step1Attempted, setStep1Attempted] = useState(false)
+  const [step2Attempted, setStep2Attempted] = useState(false)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -181,7 +183,18 @@ export default function Create() {
     setForm(prev => ({ ...prev, gallery: filled }))
   }
 
-  const canSubmitStep1 = form.groom && form.bride && form.date && form.venue
+  const canSubmitStep1 = Boolean(form.groom && form.bride && form.date && form.venue)
+
+  const handleStep1Next = () => {
+    if (canSubmitStep1) { setStep(2); return }
+    setStep1Attempted(true)
+    const missing: string[] = []
+    if (!form.groom) missing.push('Tên chú rể')
+    if (!form.bride) missing.push('Tên cô dâu')
+    if (!form.date) missing.push('Ngày cưới')
+    if (!form.venue) missing.push('Địa điểm')
+    showToast(`Vui lòng nhập: ${missing.join(', ')}`)
+  }
 
   const generate = async () => {
     setSaving(true)
@@ -267,19 +280,29 @@ export default function Create() {
                   <label className="text-xs font-semibold text-gray-600 mb-1 block">Chú rể</label>
                   <input value={form.groom} onChange={e => update('groom', e.target.value)}
                     placeholder="Nguyễn Văn A"
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                    className={`w-full px-4 py-3 bg-white/80 border rounded-xl focus:border-red-400 outline-none transition-all text-sm ${
+                      step1Attempted && !form.groom ? 'border-red-400' : 'border-gray-200'
+                    }`} />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-600 mb-1 block">Cô dâu</label>
                   <input value={form.bride} onChange={e => update('bride', e.target.value)}
                     placeholder="Trần Thị B"
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                    className={`w-full px-4 py-3 bg-white/80 border rounded-xl focus:border-red-400 outline-none transition-all text-sm ${
+                      step1Attempted && !form.bride ? 'border-red-400' : 'border-gray-200'
+                    }`} />
                 </div>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Ngày cưới</label>
-                <DateSelect value={form.date} onChange={v => update('date', v)} />
+                <DateSelect value={form.date} onChange={v => update('date', v)}
+                  inputClassName={`flex-1 px-2 py-3 bg-white/80 border rounded-xl focus:border-red-400 outline-none text-sm ${
+                    step1Attempted && !form.date ? 'border-red-400' : 'border-gray-200'
+                  }`} />
+                {step1Attempted && !form.date && (
+                  <p className="text-xs text-red-500 mt-1">Vui lòng chọn đầy đủ ngày, tháng, năm</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -291,7 +314,9 @@ export default function Create() {
                   <label className="text-xs font-semibold text-gray-600 mb-1 block">Địa điểm</label>
                   <input value={form.venue} onChange={e => update('venue', e.target.value)}
                     placeholder="Nhà hàng, khách sạn..."
-                    className="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                    className={`w-full px-4 py-3 bg-white/80 border rounded-xl focus:border-red-400 outline-none transition-all text-sm ${
+                      step1Attempted && !form.venue ? 'border-red-400' : 'border-gray-200'
+                    }`} />
                 </div>
               </div>
 
@@ -332,9 +357,10 @@ export default function Create() {
               </div>
             </div>
 
-            <button onClick={() => setStep(2)}
-              disabled={!canSubmitStep1}
-              className="mt-8 w-full py-4 bg-red-500 disabled:bg-gray-300 text-white rounded-2xl font-bold text-sm hover:bg-red-600 transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <button onClick={handleStep1Next}
+              className={`mt-8 w-full py-4 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                canSubmitStep1 ? 'bg-red-500 hover:bg-red-600' : 'bg-red-300 hover:bg-red-400'
+              }`}>
               Tiếp theo <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -351,10 +377,10 @@ export default function Create() {
             <div className="space-y-6">
               {/* Hero photo */}
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-2 block">Ảnh chính (hero)</label>
+                <label className="text-xs font-semibold text-gray-600 mb-2 block">Ảnh chính (hero) <span className="text-red-400">*bắt buộc</span></label>
                 <div onClick={() => heroInputRef.current?.click()}
                   className={`relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-dashed transition-all cursor-pointer group ${
-                    form.heroPhoto ? 'border-transparent' : 'border-gray-300 hover:border-red-400'
+                    form.heroPhoto ? 'border-transparent' : step2Attempted ? 'border-red-400' : 'border-gray-300 hover:border-red-400'
                   }`}>
                   {form.heroPhoto ? (
                     <>
@@ -375,6 +401,9 @@ export default function Create() {
                     </div>
                   )}
                 </div>
+                {step2Attempted && !form.heroPhoto && (
+                  <p className="text-xs text-red-500 mt-1">Vui lòng tải lên ảnh chính trước khi tiếp tục</p>
+                )}
                 <input ref={heroInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/svg+xml" onChange={handleHeroUpload} className="hidden" />
               </div>
 
@@ -420,7 +449,15 @@ export default function Create() {
                 className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm hover:bg-gray-200 disabled:opacity-50 transition-all">
                 ← Quay lại
               </button>
-              <button onClick={() => setStep(3)}
+              <button onClick={() => {
+                  if (uploading) return
+                  if (!form.heroPhoto) {
+                    setStep2Attempted(true)
+                    showToast('Vui lòng tải lên ảnh chính trước khi tiếp tục')
+                    return
+                  }
+                  setStep(3)
+                }}
                 disabled={uploading}
                 className="flex-1 py-4 bg-red-500 disabled:bg-gray-400 text-white rounded-2xl font-bold text-sm hover:bg-red-600 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
                 {uploading ? 'Đang nén ảnh...' : <> Xem trước <ArrowRight className="w-4 h-4" /> </>}
