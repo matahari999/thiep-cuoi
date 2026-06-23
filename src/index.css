@@ -5,7 +5,7 @@
 }
 
 .font-serif {
-  font-family: 'Playfair Display', Georgia, serif !important;
+  font-family: 'Playfair Display', 'Be Vietnam Pro', Georgia, serif !important;
 }
 
 html {
@@ -26,14 +26,6 @@ body {
 @keyframes waveSlide {
   0% { transform: translateY(-10%); }
   100% { transform: translateY(10%); }
-}
-
-@keyframes waveMotion {
-  0% { d: path("M0,0 Q16,25 0,50 Q16,75 0,100"); }
-  25% { d: path("M0,0 Q24,25 8,50 Q24,75 0,100"); }
-  50% { d: path("M0,0 Q16,25 0,50 Q16,75 0,100"); }
-  75% { d: path("M0,0 Q8,25 -8,50 Q8,75 0,100"); }
-  100% { d: path("M0,0 Q16,25 0,50 Q16,75 0,100"); }
 }
 
 @keyframes fadeIn {
@@ -93,31 +85,16 @@ body {
   100% { background-position: 0% 50%; }
 }
 
-.animate-wave-float { animation: waveFloat 3s ease-in-out infinite; }
 .animate-wave-slide { animation: waveSlide 8s ease-in-out infinite alternate; }
 .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
-.animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
 .animate-scale-in { animation: scaleIn 0.5s ease-out forwards; }
 .animate-float { animation: float 4s ease-in-out infinite; }
-.animate-heartbeat { animation: heartbeat 1.5s ease-in-out infinite; }
-.animate-shimmer {
-  background-size: 200% auto;
-  animation: shimmer 3s linear infinite;
-}
 @keyframes scrollDot {
   0% { transform: translateY(0); opacity: 1; }
   100% { transform: translateY(8px); opacity: 0; }
 }
 
-.animate-petal-fall { animation: petalFall linear infinite; }
 .animate-scroll-dot { animation: scrollDot 1.5s ease-in-out infinite; }
-.animate-slide-in-left { animation: slideInLeft 0.6s ease-out forwards; }
-.animate-slide-in-right { animation: slideInRight 0.6s ease-out forwards; }
-.animate-pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
-.animate-gradient-shift {
-  background-size: 200% 200%;
-  animation: gradientShift 4s ease infinite;
-}
 
 /* ── Pattern keyframes ───────────────────────────────────────────────────── */
 @keyframes waveSineMove {

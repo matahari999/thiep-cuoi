@@ -12,20 +12,9 @@ const features = [
   { icon: <Upload className="w-5 h-5" />, title: 'Hỗ trợ in ấn', desc: 'In trực tiếp dưới dạng thiệp A5' },
 ]
 
-const catPhotos = [
-  '/photos/gallery-1.jpg',
-  '/photos/gallery-2.jpg',
-  '/photos/gallery-3.jpg',
-  '/photos/gallery-4.jpg',
-  '/photos/gallery-5.jpg',
-  '/photos/gallery-6.jpg',
-  '/photos/gallery-7.jpg',
-  '/photos/gallery-8.jpg',
-]
-
 const categories = templateCategories.map((c, i) => ({
   id: c.id, name: c.name, count: c.templates.length,
-  photo: catPhotos[i % catPhotos.length],
+  photo: `/photos/gallery-${(i % 8) + 1}.jpg`,
   icon: c.icon, desc: c.desc,
 }))
 

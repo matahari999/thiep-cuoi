@@ -7,37 +7,6 @@ export type PatternId =
   | 'stars-twinkle' | 'stars-shooting' | 'stars-dust'
   | 'geo-diamond' | 'geo-heart' | 'geo-circle'
 
-export interface PatternMeta { id: PatternId; nameKo: string; icon: string }
-export interface PatternCategory { id: string; nameKo: string; icon: string; patterns: PatternMeta[] }
-
-export const patternCategories: PatternCategory[] = [
-  { id: 'waves', nameKo: '물결', icon: '🌊', patterns: [
-    { id: 'waves-sine',   nameKo: '사인파',   icon: '〰️' },
-    { id: 'waves-ocean',  nameKo: '파도',     icon: '🌊' },
-    { id: 'waves-ripple', nameKo: '잔물결',   icon: '💧' },
-  ]},
-  { id: 'wood', nameKo: '나무', icon: '🌲', patterns: [
-    { id: 'wood-bamboo', nameKo: '대나무', icon: '🎋' },
-    { id: 'wood-leaves', nameKo: '낙엽',   icon: '🍂' },
-    { id: 'wood-branch', nameKo: '꽃가지', icon: '🌿' },
-  ]},
-  { id: 'floral', nameKo: '꽃', icon: '🌸', patterns: [
-    { id: 'floral-cherry', nameKo: '벚꽃', icon: '🌸' },
-    { id: 'floral-rose',   nameKo: '장미', icon: '🌹' },
-    { id: 'floral-lotus',  nameKo: '연꽃', icon: '🪷' },
-  ]},
-  { id: 'stars', nameKo: '별빛', icon: '✨', patterns: [
-    { id: 'stars-twinkle',  nameKo: '반짝임',    icon: '⭐' },
-    { id: 'stars-shooting', nameKo: '유성',      icon: '🌠' },
-    { id: 'stars-dust',     nameKo: '금빛 먼지', icon: '✨' },
-  ]},
-  { id: 'geometric', nameKo: '기하학', icon: '💎', patterns: [
-    { id: 'geo-diamond', nameKo: '다이아몬드', icon: '💎' },
-    { id: 'geo-heart',   nameKo: '하트',       icon: '💕' },
-    { id: 'geo-circle',  nameKo: '원형 파문',  icon: '⭕' },
-  ]},
-]
-
 const r = (min: number, max: number) => Math.random() * (max - min) + min
 
 // ── 물결 ─────────────────────────────────────────────────────────────────────

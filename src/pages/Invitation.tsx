@@ -1,12 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { AnimatedPattern } from '../components/AnimatedPattern'
-import { useParams, Link, useLocation } from 'react-router-dom'
-import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2, Copy, Check, MessageCircle, Users, Printer, Play, Pause, QrCode, MessageSquare } from 'lucide-react'
-import { getTemplateById, allTemplates, frameVariantByTemplate, frameColorByTemplate } from '../lib/templates'
+import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom'
+import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2, Copy, Check, MessageCircle, Users, Printer, QrCode, MessageSquare, Download, Lock, Loader2 } from 'lucide-react'
+import { getTemplateById, allTemplates } from '../lib/templates'
+import { lunarDateFromStr } from '../lib/lunar'
 import FrameDecoration from '../components/FrameDecoration'
 import { QRCodeSVG } from 'qrcode.react'
 import { vietQrUrl, VN_BANKS } from '../lib/vietqr'
 import { supabase } from '../lib/supabase'
+import WatermarkOverlay from '../components/WatermarkOverlay'
+import { deriveInvitationId, checkPaymentStatus, buildCheckoutUrl, downloadInvitationCard } from '../lib/payment'
+import { useOGMeta } from '../hooks/useOGMeta'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
 
 function decodeShareUrl(encoded: string): Partial<InvitationData> | null {
   try {
@@ -106,8 +112,6 @@ function generateICS(data: InvitationData): string {
     'END:VEVENT', 'END:VCALENDAR',
   ].join('\r\n')
 }
-
-const sectionIds = ['hero', 'welcome', 'countdown', 'details', 'gallery', 'bank', 'rsvp', 'guestbook']
 
 function SectionTitle({ icon, title, titleEn, color }: { icon: string; title: string; titleEn: string; color: string }) {
   return (
@@ -272,11 +276,13 @@ export default function Invitation() {
   const [showBank, setShowBank] = useState(false)
   const [guestbook, setGuestbook] = useState<{ name: string; msg: string }[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [searchParams] = useSearchParams()
 
-  const [autoScrolling, setAutoScrolling] = useState(true)
-  const [currentIdx, setCurrentIdx] = useState(0)
-  const isProgrammatic = useRef(false)
-  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // ── 결제 상태 ────────────────────────────────────────────────────────────
+  const invitationId = encodedData ? deriveInvitationId(encodedData) : ''
+  const [isPaid, setIsPaid] = useState(false)
+  const [payCheckDone, setPayCheckDone] = useState(false)
+  const [downloading, setDownloading] = useState(false)
 
   const [heroIdx, setHeroIdx] = useState(0)
   const [showQr, setShowQr] = useState(false)
@@ -290,9 +296,84 @@ export default function Invitation() {
   }, [hasSlideshow, heroPhotos.length])
 
   const dday = data ? getDday(data.date, data.time) : { days: 0, hours: 0 }
+  const lunarDateStr = useMemo(() => lunarDateFromStr(data?.date ?? ''), [data?.date])
   const colorClass = theme?.accent || 'text-red-500'
   const bgColorClass = colorClass.replace('text-', 'bg-')
-  const accentStroke = theme?.accent?.includes('yellow') ? '#fde047' : theme?.accent?.includes('white') ? '#fff' : '#fca5a5'
+  const accentStroke = theme?.accentHex ?? '#fca5a5'
+  const secondaryStroke = theme?.fontColorSecondaryHex ?? '#fca5a5'
+  const decorativeFontClass = theme?.fontFamily === 'serif' ? 'font-serif' : ''
+
+  // 히어로 사진이 있으면 글자를 흰색으로 고정 (어두운 오버레이 위에서 가독성 확보)
+  const hasHeroPhoto = heroPhotos.length > 0
+  const heroFontColor    = hasHeroPhoto ? 'text-white drop-shadow-md' : (theme?.fontColor ?? 'text-gray-800')
+  const heroSecondary    = hasHeroPhoto ? 'text-white/75'             : (theme?.fontColorSecondary ?? 'text-gray-400')
+  const heroAccentStroke = hasHeroPhoto ? '#ffffff'                   : accentStroke
+  const heroSecStroke    = hasHeroPhoto ? 'rgba(255,255,255,0.6)'     : secondaryStroke
+
+  // ── 긴 텍스트 자동 축소 계산 ─────────────────────────────────────────────
+  // Unicode aware length (베트남어 복합 글자 단위)
+  const uniLen = (s: string) => [...s].length
+
+  // 히어로 섹션: 표시 이름 = groom/bride 마지막 단어
+  const groomDisplay = useMemo(() => (data?.groom ?? '').split(' ').pop() ?? '', [data?.groom])
+  const brideDisplay = useMemo(() => (data?.bride ?? '').split(' ').pop() ?? '', [data?.bride])
+  const heroDisplayLen = uniLen(groomDisplay) + uniLen(brideDisplay)
+
+  // 히어로 이름 폰트 크기: 두 이름 합계 기준
+  const heroNameFontClass = heroDisplayLen > 20 ? 'text-2xl'
+    : heroDisplayLen > 14 ? 'text-3xl' : 'text-4xl'
+
+  // 웰컴 섹션: 전체 이름 표시 → 긴 경우 폰트 축소
+  const groomNameFontClass = uniLen(data?.groom ?? '') > 16 ? 'text-xl' : 'text-2xl'
+  const brideNameFontClass = uniLen(data?.bride ?? '') > 16 ? 'text-xl' : 'text-2xl'
+
+  // ── 결제 상태 조회 + ?paid=ok 폴링 ─────────────────────────────────────
+  useEffect(() => {
+    if (!invitationId) { setPayCheckDone(true); return }
+
+    const check = async () => {
+      const paid = await checkPaymentStatus(invitationId)
+      setIsPaid(paid)
+      setPayCheckDone(true)
+      return paid
+    }
+
+    check().then(paid => {
+      // 결제 완료 후 리다이렉트로 돌아온 경우 → 웹훅 처리 대기 후 재조회
+      if (!paid && searchParams.get('paid') === 'ok') {
+        let attempts = 0
+        const MAX = 12
+        const poll = async () => {
+          attempts++
+          const confirmed = await checkPaymentStatus(invitationId)
+          if (confirmed) { setIsPaid(true); return }
+          if (attempts < MAX) setTimeout(poll, 2500)
+        }
+        setTimeout(poll, 1500)
+      }
+    })
+  }, [invitationId])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Canvas HD 다운로드 핸들러 ─────────────────────────────────────────
+  const handleDownload = async () => {
+    if (!data || !theme) return
+    setDownloading(true)
+    try {
+      await downloadInvitationCard({
+        groom:    data.groom,
+        bride:    data.bride,
+        date:     data.date,
+        time:     data.time,
+        venue:    data.venue,
+        heroPhoto: data.heroPhoto || '',
+        accentHex:             theme.accentHex,
+        fontColorHex:          theme.fontColorHex,
+        fontColorSecondaryHex: theme.fontColorSecondaryHex,
+      }, `thiep-cuoi-${data.groom}-${data.bride}`.replace(/\s+/g, '-'))
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   useEffect(() => { window.scrollTo(0, 0) }, [slug])
 
@@ -314,59 +395,6 @@ export default function Invitation() {
 
     return () => { audio.pause(); audioRef.current = null }
   }, [])
-
-  const scrollToSection = useCallback((idx: number) => {
-    isProgrammatic.current = true
-    const el = document.getElementById(`section-${sectionIds[idx]}`)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    setCurrentIdx(idx)
-    setTimeout(() => { isProgrammatic.current = false }, 800)
-  }, [])
-
-  useEffect(() => {
-    if (!autoScrolling || !data) return
-    const timer = setInterval(() => {
-      setCurrentIdx(prev => {
-        const next = (prev + 1) % sectionIds.length
-        scrollToSection(next)
-        return next
-      })
-    }, 4500)
-    return () => clearInterval(timer)
-  }, [autoScrolling, data, scrollToSection])
-
-  const pauseAutoScroll = useCallback(() => {
-    if (isProgrammatic.current) return
-    setAutoScrolling(false)
-    if (pauseTimer.current) clearTimeout(pauseTimer.current)
-    pauseTimer.current = setTimeout(() => setAutoScrolling(true), 12000)
-  }, [])
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (isProgrammatic.current) return
-      const scrollY = window.scrollY
-      let activeIdx = 0
-      for (let i = sectionIds.length - 1; i >= 0; i--) {
-        const el = document.getElementById(`section-${sectionIds[i]}`)
-        if (el && el.offsetTop <= scrollY + 200) { activeIdx = i; break }
-      }
-      setCurrentIdx(activeIdx)
-      pauseAutoScroll()
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [pauseAutoScroll])
-
-  const toggleAutoScroll = () => {
-    if (autoScrolling) {
-      setAutoScrolling(false)
-      if (pauseTimer.current) clearTimeout(pauseTimer.current)
-    } else {
-      setAutoScrolling(true)
-      if (pauseTimer.current) clearTimeout(pauseTimer.current)
-    }
-  }
 
   const toggleMusic = () => {
     if (!audioRef.current) return
@@ -433,6 +461,31 @@ export default function Invitation() {
     if (guestMessage) setGuestbook(prev => [{ name: guestName, msg: guestMessage }, ...prev])
   }
 
+  // ── 동적 OG 메타태그 ──────────────────────────────────────────────────────
+  const ogImageUrl = useMemo(() => {
+    if (!SUPABASE_URL || !data) return '/og-image.png'
+    const base = `${SUPABASE_URL}/functions/v1/og-image`
+    if (encodedData) return `${base}?d=${encodeURIComponent(encodedData)}`
+    const params = new URLSearchParams({
+      groom: data.groom,
+      bride: data.bride,
+      date:  data.date,
+      venue: data.venue,
+      theme: slug || data.template || 'classic-red',
+    })
+    return `${base}?${params.toString()}`
+  }, [encodedData, data, slug])
+
+  useOGMeta({
+    title: data
+      ? `Lễ cưới ${data.groom} & ${data.bride}`
+      : 'Thiệp Cưới Online',
+    description: data
+      ? `Trân trọng kính mời tham dự lễ cưới ngày ${data.date} tại ${data.venue}`
+      : 'Tạo thiệp cưới online đẹp, sang trọng.',
+    imageUrl: ogImageUrl,
+  })
+
   if (customLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -473,25 +526,7 @@ export default function Invitation() {
 
       <div className="w-full max-w-md mx-auto bg-white min-h-screen relative print:max-w-full print:shadow-none">
 
-        {/* ===== SECTION PROGRESS INDICATOR ===== */}
-        <div className="fixed right-2 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2.5 print-hidden">
-          {sectionIds.map((id, i) => (
-            <button key={id} onClick={() => { setAutoScrolling(false); scrollToSection(i) }}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                currentIdx === i
-                  ? `${bgColorClass || 'bg-red-500'} w-3 h-3 shadow-lg ${bgColorClass?.replace('bg-', 'shadow-') || 'shadow-red-300'}`
-                  : 'bg-gray-300 hover:bg-gray-400'
-              }`} />
-          ))}
-          <button onClick={toggleAutoScroll}
-            className={`mt-3 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
-              autoScrolling ? `${bgColorClass || 'bg-red-500'} text-white` : 'bg-gray-200 text-gray-500'
-            }`}>
-            {autoScrolling ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-          </button>
-        </div>
-
-        {/* Demo banner */}
+        {/* ── 데모 배너 ── */}
         {isDemo && (
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-3 flex items-center justify-between print-hidden">
             <div>
@@ -505,24 +540,68 @@ export default function Invitation() {
           </div>
         )}
 
-        {/* Music button */}
-        <button onClick={toggleMusic} className={`fixed z-50 w-12 h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all print-hidden ${isDemo ? 'bottom-20 right-4' : 'bottom-6 right-6'}`}>
-          {musicOn ? <Music2 className={`w-5 h-5 ${colorClass}`} /> : <Music className="w-5 h-5 text-gray-400" />}
-        </button>
-
-        {/* Free watermark */}
-        {isCustom && (
-          <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center overflow-hidden print-watermark">
-            <div className="watermark-float select-none text-center" style={{ transform: 'rotate(-30deg)' }}>
-              <p className="text-4xl font-bold tracking-widest text-gray-900/[0.07] leading-tight">
-                Thiệp Cưới
-              </p>
-              <p className="text-xs font-semibold tracking-[0.4em] text-gray-900/[0.07] uppercase mt-1">
-                thiepcuoi.online
-              </p>
+        {/* ── 결제 전 배너 (미결제 공유 초대장) ── */}
+        {isShared && payCheckDone && !isPaid && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/97 backdrop-blur-xl border-t border-red-100 px-4 py-3 print-hidden shadow-[0_-4px_24px_rgba(220,38,38,0.10)]">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                  <Lock className="w-3 h-3 text-red-400 shrink-0" />
+                  Tải về ảnh HD · Xoá watermark
+                </p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Thanh toán một lần, tải không giới hạn</p>
+              </div>
+              <a
+                href={buildCheckoutUrl(invitationId) || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => { if (!buildCheckoutUrl(invitationId)) e.preventDefault() }}
+                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-red-200"
+              >
+                <Download className="w-3.5 h-3.5" />
+                99.000 ₫
+              </a>
             </div>
           </div>
         )}
+
+        {/* ── 결제 완료 배너 (다운로드 버튼) ── */}
+        {isShared && isPaid && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/97 backdrop-blur-xl border-t border-green-100 px-4 py-3 print-hidden shadow-[0_-4px_24px_rgba(34,197,94,0.08)]">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                  <Check className="w-3 h-3 text-green-500 shrink-0" />
+                  Đã thanh toán · Tải về không giới hạn
+                </p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Ảnh HD 1080×1920 px · Không watermark</p>
+              </div>
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-green-200"
+              >
+                {downloading
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <Download className="w-3.5 h-3.5" />}
+                {downloading ? 'Đang tạo...' : 'Tải ảnh HD'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── 음악 버튼 (위치는 하단 배너 유무에 따라 조정) ── */}
+        <button
+          onClick={toggleMusic}
+          className={`fixed z-50 w-12 h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all print-hidden ${
+            (isDemo || (isShared && payCheckDone)) ? 'bottom-20 right-4' : 'bottom-6 right-6'
+          }`}
+        >
+          {musicOn ? <Music2 className={`w-5 h-5 ${colorClass}`} /> : <Music className="w-5 h-5 text-gray-400" />}
+        </button>
+
+        {/* ── 워터마크: 미결제 공유 초대장에만 표시 ── */}
+        {isShared && payCheckDone && !isPaid && <WatermarkOverlay />}
 
         {/* Print styles */}
         <style>{`
@@ -601,10 +680,10 @@ export default function Invitation() {
           )}
 
           {/* 구조적 SVG 프레임 장식 (한국 라인아트 / 베트남 골드 / 서양 수채화) */}
-          {frameVariantByTemplate[theme.id] && (
+          {theme.frameVariant && (
             <FrameDecoration
-              variant={frameVariantByTemplate[theme.id]}
-              color={frameColorByTemplate[theme.id]}
+              variant={theme.frameVariant}
+              color={theme.frameColor ?? '#d4af37'}
             />
           )}
 
@@ -625,41 +704,41 @@ export default function Invitation() {
             {/* Decorative top border */}
             <div className="flex items-center gap-3 mb-5">
               <svg className="w-12 h-3 overflow-visible" viewBox="0 0 48 8" fill="none">
-                <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={theme.fontColorSecondary} strokeWidth="0.7" opacity="0.5" />
+                <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={heroSecStroke} strokeWidth="0.7" opacity="0.5" />
               </svg>
-              <span className={`text-xs font-light tracking-[0.3em] ${theme.fontColorSecondary}`}>WEDDING</span>
+              <span className={`text-xs font-light tracking-[0.3em] ${heroSecondary} ${decorativeFontClass}`}>WEDDING</span>
               <svg className="w-12 h-3 overflow-visible" viewBox="0 0 48 8" fill="none">
-                <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={theme.fontColorSecondary} strokeWidth="0.7" opacity="0.5" />
+                <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={heroSecStroke} strokeWidth="0.7" opacity="0.5" />
               </svg>
             </div>
             <span className="text-5xl mb-4 text-white/80 drop-shadow-lg">{theme.icon}</span>
-            {/* Decorative wave divider instead of heart */}
+            {/* Decorative wave divider */}
             <div className="flex items-center gap-2 mb-4">
               <svg className="w-16 h-4" viewBox="0 0 64 8" fill="none">
-                <path d="M0,4 Q8,0 16,4 Q24,8 32,4 Q40,0 48,4 Q56,8 64,4" stroke={accentStroke} strokeWidth="0.8" opacity="0.6" />
+                <path d="M0,4 Q8,0 16,4 Q24,8 32,4 Q40,0 48,4 Q56,8 64,4" stroke={heroAccentStroke} strokeWidth="0.8" opacity="0.6" />
               </svg>
-              <svg className="w-5 h-5 animate-float" viewBox="0 0 24 24" fill="none" stroke={accentStroke} strokeWidth="1.5">
+              <svg className="w-5 h-5 animate-float" viewBox="0 0 24 24" fill="none" stroke={heroAccentStroke} strokeWidth="1.5">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
               </svg>
               <svg className="w-16 h-4" viewBox="0 0 64 8" fill="none">
-                <path d="M0,4 Q8,0 16,4 Q24,8 32,4 Q40,0 48,4 Q56,8 64,4" stroke={accentStroke} strokeWidth="0.8" opacity="0.6" />
+                <path d="M0,4 Q8,0 16,4 Q24,8 32,4 Q40,0 48,4 Q56,8 64,4" stroke={heroAccentStroke} strokeWidth="0.8" opacity="0.6" />
               </svg>
             </div>
-            <p className={`text-xs font-light tracking-[0.3em] ${theme.fontColorSecondary} mb-3`}>WEDDING INVITATION</p>
-            <h1 className={`text-4xl font-bold ${theme.fontColor} text-center leading-tight`}>
-              {data.groom.split(' ').pop()}
-              <span className={`mx-3 ${theme.accent}`}>&</span>
-              {data.bride.split(' ').pop()}
+            <p className={`text-xs font-light tracking-[0.3em] ${heroSecondary} ${decorativeFontClass} mb-3`}>WEDDING INVITATION</p>
+            <h1 className={`${heroNameFontClass} font-bold ${heroFontColor} ${decorativeFontClass} text-center leading-tight break-words hyphens-auto max-w-xs`}>
+              {groomDisplay}
+              <span className={`mx-3 ${hasHeroPhoto ? 'text-white/90' : theme.accent}`}>&</span>
+              {brideDisplay}
             </h1>
-            <p className={`text-sm mt-4 ${theme.fontColorSecondary} opacity-80 text-center`}>{data.date}</p>
+            <p className={`text-sm mt-4 ${heroSecondary} opacity-80 text-center`}>{data.date}</p>
             {/* Decorative bottom border */}
             <div className="flex items-center gap-3 mt-6">
               <svg className="w-10 h-3" viewBox="0 0 40 8" fill="none">
-                <path d="M0,4 Q10,0 20,4 Q30,8 40,4" stroke={theme.fontColorSecondary} strokeWidth="0.7" opacity="0.4" />
+                <path d="M0,4 Q10,0 20,4 Q30,8 40,4" stroke={heroSecStroke} strokeWidth="0.7" opacity="0.4" />
               </svg>
-              <span className="text-[8px] tracking-[0.4em] uppercase" style={{ color: theme.fontColorSecondary, opacity: 0.5 }}>Love</span>
+              <span className={`text-[8px] tracking-[0.4em] uppercase ${decorativeFontClass}`} style={{ color: heroSecStroke, opacity: 0.5 }}>Love</span>
               <svg className="w-10 h-3" viewBox="0 0 40 8" fill="none">
-                <path d="M0,4 Q10,0 20,4 Q30,8 40,4" stroke={theme.fontColorSecondary} strokeWidth="0.7" opacity="0.4" />
+                <path d="M0,4 Q10,0 20,4 Q30,8 40,4" stroke={heroSecStroke} strokeWidth="0.7" opacity="0.4" />
               </svg>
             </div>
             <div className="absolute bottom-12 animate-bounce print-hidden">
@@ -672,11 +751,11 @@ export default function Invitation() {
         <section id="section-welcome" className="px-6 py-16 text-center print-section">
           <AnimatedSection>
             <SectionTitle icon="💌" title="Thân mời" titleEn="Welcome" color={colorClass} />
-            <p className="text-2xl font-bold text-gray-800 mb-2">{data.groom}</p>
-            {data.groomParent && <p className="text-gray-400 text-sm mb-1">Con trai {data.groomParent}</p>}
+            <p className={`${groomNameFontClass} font-bold text-gray-800 mb-2 break-words hyphens-auto text-center`}>{data.groom}</p>
+            {data.groomParent && <p className="text-gray-400 text-sm mb-1 break-words text-center">Con trai {data.groomParent}</p>}
             <div className="flex justify-center my-4"><Heart className="w-5 h-5 text-gray-300" /></div>
-            <p className="text-2xl font-bold text-gray-800 mb-2">{data.bride}</p>
-            {data.brideParent && <p className="text-gray-400 text-sm mb-8">Con gái {data.brideParent}</p>}
+            <p className={`${brideNameFontClass} font-bold text-gray-800 mb-2 break-words hyphens-auto text-center`}>{data.bride}</p>
+            {data.brideParent && <p className="text-gray-400 text-sm mb-8 break-words text-center">Con gái {data.brideParent}</p>}
             <p className="text-gray-600 leading-relaxed text-sm max-w-xs mx-auto">{data.message}</p>
           </AnimatedSection>
         </section>
@@ -699,6 +778,11 @@ export default function Invitation() {
             <p className="text-center text-sm text-gray-500 mt-4">
               {data.date} (giờ {data.time})
             </p>
+            {lunarDateStr && (
+              <p className="text-center text-xs text-gray-400 mt-1 italic">
+                {lunarDateStr}
+              </p>
+            )}
           </AnimatedSection>
         </section>
 
@@ -720,24 +804,54 @@ export default function Invitation() {
                 <div className={`w-12 h-12 ${bgColorClass || 'bg-red-100'} rounded-xl flex items-center justify-center shrink-0`}>
                   <MapPin className={`w-6 h-6 ${colorClass}`} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-gray-400">Địa điểm</p>
-                  <p className="font-semibold text-gray-800 text-sm">{data.venue}</p>
+                  <p className="font-semibold text-gray-800 text-sm break-words">{data.venue}</p>
                 </div>
               </a>
             </div>
-            <div className="mt-6">
-              <iframe title="map" src={`https://maps.google.com/maps?q=${encodeURIComponent(data.venue)}&output=embed`}
-                className="w-full h-48 rounded-2xl" loading="lazy" />
+            {/* Google Maps iframe embed */}
+            <div className="mt-5 rounded-2xl overflow-hidden shadow-sm border border-gray-100 relative">
+              <iframe
+                title="Bản đồ địa điểm tổ chức"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(data.venue)}&output=embed&hl=vi&z=16`}
+                className="w-full h-64"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+              {/* Overlay nút mở full map */}
+              <a
+                href={`https://maps.google.com/maps?q=${encodeURIComponent(data.venue)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute top-2 right-2 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm hover:bg-white transition-colors print-hidden"
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                  <polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                Xem bản đồ
+              </a>
             </div>
-            <div className="mt-4 flex gap-3 print-hidden">
-              <button onClick={() => window.open(`https://maps.google.com/maps/dir/?api=1&destination=${encodeURIComponent(data.venue)}`)}
-                className={`flex-1 py-4 rounded-2xl font-bold text-sm text-white transition-all ${bgColorClass || 'bg-red-500'} hover:opacity-90 flex items-center justify-center gap-2`}>
-                <MapPin className="w-4 h-4" /> Chỉ đường
-              </button>
-              <button onClick={saveToCalendar}
-                className={`flex-1 py-4 rounded-2xl font-bold text-sm text-white transition-all ${bgColorClass || 'bg-red-500'} hover:opacity-90 flex items-center justify-center gap-2`}>
-                <Calendar className="w-4 h-4" /> Lưu lịch
+
+            {/* Nút hành động */}
+            <div className="mt-4 flex gap-2.5 print-hidden">
+              <a
+                href={`https://maps.google.com/maps/dir/?api=1&destination=${encodeURIComponent(data.venue)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex-1 py-3.5 rounded-2xl font-bold text-sm text-white transition-all ${bgColorClass || 'bg-red-500'} hover:opacity-90 flex items-center justify-center gap-2 shadow-sm`}
+              >
+                <MapPin className="w-4 h-4 shrink-0" />
+                Chỉ đường
+              </a>
+              <button
+                onClick={saveToCalendar}
+                className="flex-1 py-3.5 rounded-2xl font-bold text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+              >
+                <Calendar className="w-4 h-4 shrink-0" />
+                Lưu lịch
               </button>
             </div>
           </AnimatedSection>
@@ -925,13 +1039,13 @@ export default function Invitation() {
         <footer className={`px-6 py-12 text-center ${theme.cardBg} print-section`}>
           <div className="flex items-center justify-center gap-3 mb-4">
             <svg className="w-12 h-3" viewBox="0 0 48 8" fill="none">
-              <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={theme.fontColorSecondary} strokeWidth="0.7" opacity="0.4" />
+              <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={secondaryStroke} strokeWidth="0.7" opacity="0.4" />
             </svg>
             <svg className="w-4 h-4 animate-float" viewBox="0 0 24 24" fill="none" stroke={accentStroke} strokeWidth="1.5">
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
             </svg>
             <svg className="w-12 h-3" viewBox="0 0 48 8" fill="none">
-              <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={theme.fontColorSecondary} strokeWidth="0.7" opacity="0.4" />
+              <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={secondaryStroke} strokeWidth="0.7" opacity="0.4" />
             </svg>
           </div>
           <p className={`text-sm font-medium ${theme.fontColor} opacity-80`}>{data.groom.split(' ').pop()} & {data.bride.split(' ').pop()}</p>

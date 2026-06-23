@@ -1,4 +1,16 @@
 node_modules
 dist
 .env.local
+.env.production
 *.local
+
+# 디버그/임시 파일
+*.log
+debug-*.png
+verify-*.png
+wedding-frame-*.png
+diacritics-*.png
+diacritics-*.html
+report.html
+verify-all/
+.omc/
