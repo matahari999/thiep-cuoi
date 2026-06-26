@@ -12,7 +12,7 @@ import WatermarkOverlay from '../components/WatermarkOverlay'
 import { deriveInvitationId, checkPaymentStatus, buildCheckoutUrl, downloadInvitationCard } from '../lib/payment'
 import { useOGMeta } from '../hooks/useOGMeta'
 import { shareNative, shareZalo, shareFacebook, shareKakaoTalk, shareWhatsApp, shareTwitter, copyToClipboard } from '../lib/share'
-import { t, type Locale, SUPPORTED_LOCALES, detectLocale } from '../lib/i18n'
+import { t, type Locale, SUPPORTED_LOCALES } from '../lib/i18n'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
 
@@ -88,7 +88,7 @@ for (let idx = 0; idx < allTemplates.length; idx++) {
     { g: 'Phùng Văn Lộc', b: 'Bạch Thị Ngà', gp: 'Ông Phùng Văn M2 & Bà Bạch Thị N2', bp: 'Ông Bạch Văn O2 & Bà Phùng Thị P2', d: '15/11/2028', ti: '11:00', v: 'White Swan Garden, 18A Cộng Hòa, Tân Bình, TP.HCM' },
   ]
   const c = couples[idx % couples.length]
-    const demoLocale = detectLocale()
+    const demoLocale: Locale = 'vi'
     const sampleMilestones: Milestone[] = [
       { date: t('milestone_month_3', demoLocale), title: t('milestone_1_title', demoLocale), desc: t('milestone_1_desc', demoLocale) },
       { date: t(idx % 2 === 0 ? 'milestone_month_7' : 'milestone_month_9', demoLocale), title: t('milestone_2_title', demoLocale), desc: t('milestone_2_desc', demoLocale) },
@@ -281,7 +281,7 @@ export default function Invitation() {
   const { slug, d: encodedData } = useParams<{ slug?: string; d?: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const langParam = searchParams.get('lang') as Locale | null
-  const [locale, setLocale] = useState<Locale>(langParam && SUPPORTED_LOCALES.some(l => l.code === langParam) ? langParam : detectLocale())
+  const [locale, setLocale] = useState<Locale>(langParam && SUPPORTED_LOCALES.some(l => l.code === langParam) ? langParam : 'vi')
 
   const changeLocale = (l: Locale) => {
     setLocale(l)
