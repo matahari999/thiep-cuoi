@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { AnimatedPattern } from '../components/AnimatedPattern'
 import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom'
-import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2, Copy, Check, MessageCircle, Users, Printer, QrCode, MessageSquare, Download, Lock, Loader2 } from 'lucide-react'
+import { MapPin, Calendar, Heart, ArrowLeft, Music, Music2, ChevronDown, Share2, Copy, Check, MessageCircle, Users, Printer, QrCode, MessageSquare, Download, Lock, Loader2, Globe, ExternalLink, Bell } from 'lucide-react'
 import { getTemplateById, allTemplates } from '../lib/templates'
 import { lunarDateFromStr } from '../lib/lunar'
 import FrameDecoration from '../components/FrameDecoration'
@@ -11,6 +11,8 @@ import { supabase } from '../lib/supabase'
 import WatermarkOverlay from '../components/WatermarkOverlay'
 import { deriveInvitationId, checkPaymentStatus, buildCheckoutUrl, downloadInvitationCard } from '../lib/payment'
 import { useOGMeta } from '../hooks/useOGMeta'
+import { shareNative, shareZalo, shareFacebook, shareKakaoTalk, shareWhatsApp, shareTwitter, copyToClipboard } from '../lib/share'
+import { t, type Locale, SUPPORTED_LOCALES, detectLocale } from '../lib/i18n'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
 
@@ -20,6 +22,13 @@ function decodeShareUrl(encoded: string): Partial<InvitationData> | null {
     const json = decodeURIComponent(escape(atob(padded)))
     return JSON.parse(json)
   } catch { return null }
+}
+
+interface Milestone {
+  date: string
+  title: string
+  desc: string
+  photo?: string
 }
 
 interface InvitationData {
@@ -43,6 +52,12 @@ interface InvitationData {
   bankBrideId?: string
   bankBrideAccount?: string
   bankBrideName?: string
+  loveStory?: Milestone[]
+  transport?: string
+  phone?: string
+  pickupTime?: string
+  pickupLocation?: string
+  pickupContact?: string
 }
 
 const demoData: Record<string, InvitationData> = {}
@@ -73,15 +88,43 @@ for (let idx = 0; idx < allTemplates.length; idx++) {
     { g: 'Phùng Văn Lộc', b: 'Bạch Thị Ngà', gp: 'Ông Phùng Văn M2 & Bà Bạch Thị N2', bp: 'Ông Bạch Văn O2 & Bà Phùng Thị P2', d: '15/11/2028', ti: '11:00', v: 'White Swan Garden, 18A Cộng Hòa, Tân Bình, TP.HCM' },
   ]
   const c = couples[idx % couples.length]
-  demoData[t.id] = {
+    const sampleMilestones: Milestone[] = [
+      { date: c.d.split('/').map((_, __, a) => [a[1], a[0], a[2]].join('/')).join(' ').replace(/^/, 'Tháng ') || 'Tháng 3/2020', title: 'Lần Đầu Gặp Mặt', desc: 'Tôi đã từng không tin vào tình yêu online. Đã từng nghĩ làm sao có thể thích một người chưa từng gặp mặt?' },
+      { date: idx % 2 === 0 ? 'Tháng 7/2020' : 'Tháng 9/2020', title: 'Bắt Đầu Hẹn Hò', desc: 'Nhưng rồi một ngày đẹp trời, người con trai ấy xuất hiện, nắm tay rồi thủ thỉ vào tai: Hy vọng sau này anh được làm những điều ấy cùng em.' },
+      { date: 'Tháng 6/2024', title: 'Giây Phút Cầu Hôn', desc: 'Giây phút anh ngỏ lời Làm vợ anh nhé!, em đã nguyện ý đời này, đi đâu cũng được, miễn là cùng anh.' },
+      { date: c.d, title: 'Ngày Chung Đôi', desc: 'Sau bao nhiêu chờ đợi, cuối cùng ngày vui của chúng ta cũng tới rồi.' },
+    ]
+    demoData[t.id] = {
     groom: c.g, bride: c.b, groomParent: c.gp, brideParent: c.bp,
     date: c.d, time: c.ti, venue: c.v,
     mapUrl: 'https://maps.google.com/',
     message: 'Trân trọng kính mời bạn đến chung vui cùng gia đình chúng tôi trong ngày trọng đại. Sự hiện diện của bạn là niềm vinh hạnh lớn nhất của chúng tôi.',
     heroPhoto: '',
     gallery: [],
-    template: t.id
+    template: t.id,
+    loveStory: sampleMilestones,
   }
+}
+
+function scheduleReminder(data: InvitationData | null) {
+  if (!data || !('Notification' in window) || Notification.permission !== 'granted') return
+  const [d, m, y] = data.date.split('/').map(Number)
+  const target = new Date(y, m - 1, d, 8, 0, 0)
+  const now = new Date()
+  const diff = target.getTime() - now.getTime()
+  if (diff <= 0) {
+    new Notification(t('reminder_title', 'vi'), {
+      body: t('reminder_body', 'vi', data.groom, data.bride),
+      icon: '/favicon.ico',
+    })
+    return
+  }
+  setTimeout(() => {
+    new Notification(t('reminder_title', 'vi'), {
+      body: t('reminder_body', 'vi', data.groom, data.bride),
+      icon: '/favicon.ico',
+    })
+  }, Math.min(diff, 2147483647))
 }
 
 function getDday(targetDate: string, targetTime?: string): { days: number, hours: number } {
@@ -206,8 +249,46 @@ function parseCustomDate(dateStr: string): string {
   return dateStr
 }
 
+function LanguageSwitcher({ locale, onChange }: { locale: Locale; onChange: (l: Locale) => void }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-2 py-1 bg-white/20 backdrop-blur-md rounded-lg text-xs text-white hover:bg-white/30 transition-colors">
+        <span>{SUPPORTED_LOCALES.find(l => l.code === locale)?.flag}</span>
+        <span className="text-[10px]">{SUPPORTED_LOCALES.find(l => l.code === locale)?.code.toUpperCase()}</span>
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 min-w-[140px] z-50">
+          {SUPPORTED_LOCALES.map(l => (
+            <button key={l.code} onClick={() => { onChange(l.code); setOpen(false) }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-gray-50 transition-colors ${
+                locale === l.code ? 'font-bold text-gray-900 bg-gray-50' : 'text-gray-600'
+              }`}>
+              <span>{l.flag}</span>
+              <span>{l.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Invitation() {
   const { slug, d: encodedData } = useParams<{ slug?: string; d?: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const langParam = searchParams.get('lang') as Locale | null
+  const [locale, setLocale] = useState<Locale>(langParam && SUPPORTED_LOCALES.some(l => l.code === langParam) ? langParam : detectLocale())
+
+  const changeLocale = (l: Locale) => {
+    setLocale(l)
+    const params = new URLSearchParams(searchParams.toString())
+    if (l !== 'vi') params.set('lang', l)
+    else params.delete('lang')
+    setSearchParams(params, { replace: true })
+  }
 
   const [customData, setCustomData] = useState<InvitationData | null>(null)
   const [customLoading, setCustomLoading] = useState(true)
@@ -229,6 +310,7 @@ export default function Invitation() {
           date: '', time: '', venue: '', mapUrl: 'https://maps.google.com/',
           message: '', heroPhoto: '/photos/hero.jpg', gallery: [], template: 'classic-red',
         }
+        const ls = decoded.loveStory
         setCustomData({
           ...base,
           ...decoded,
@@ -236,6 +318,7 @@ export default function Invitation() {
           heroPhoto: photos.heroPhoto || decoded.heroPhoto || '/photos/hero.jpg',
           gallery: photos.gallery?.filter(Boolean)?.length ? photos.gallery : [],
           mapUrl: decoded.mapUrl || 'https://maps.google.com/',
+          loveStory: Array.isArray(ls) && ls.length > 0 ? ls : undefined,
         })
       }
       setCustomLoading(false)
@@ -262,7 +345,7 @@ export default function Invitation() {
     }
   }, [isShared, isCustom, encodedData, location.state])
 
-  const data = isCustom ? customData : (slug ? demoData[slug] : null)
+  let data = isCustom ? customData : (slug ? demoData[slug] : null)
   const theme = isCustom
     ? (getTemplateById(data?.template || '') || getTemplateById('classic-red'))
     : (slug ? getTemplateById(slug) : undefined)
@@ -271,12 +354,15 @@ export default function Invitation() {
   const [guestName, setGuestName] = useState('')
   const [guestCount, setGuestCount] = useState('1')
   const [guestMessage, setGuestMessage] = useState('')
+  const [transport, setTransport] = useState('self')
+  const [phone, setPhone] = useState('')
   const [rsvpSent, setRsvpSent] = useState(false)
   const [rsvpSubmitting, setRsvpSubmitting] = useState(false)
   const [showBank, setShowBank] = useState(false)
   const [guestbook, setGuestbook] = useState<{ name: string; msg: string }[]>([])
+  const [reminderStatus, setReminderStatus] = useState<'idle' | 'granted' | 'denied' | 'scheduled'>('idle')
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [searchParams] = useSearchParams()
+  const isPreview = searchParams.get('preview') === '1'
 
   // ── 결제 상태 ────────────────────────────────────────────────────────────
   const invitationId = encodedData ? deriveInvitationId(encodedData) : ''
@@ -286,6 +372,17 @@ export default function Invitation() {
 
   const [heroIdx, setHeroIdx] = useState(0)
   const [showQr, setShowQr] = useState(false)
+  const [showShare, setShowShare] = useState(false)
+
+  if (data && isPreview) {
+    const pg = searchParams.get('groom')
+    const pb = searchParams.get('bride')
+    const pd = searchParams.get('date')
+    if (pg || pb || pd) {
+      data = { ...data, ...(pg ? { groom: pg, groomParent: '' } : {}), ...(pb ? { bride: pb, brideParent: '' } : {}), ...(pd ? { date: pd } : {}) }
+    }
+  }
+
   const heroPhotos = data ? [data.heroPhoto, ...data.gallery].filter(Boolean) : []
   const hasSlideshow = heroPhotos.length >= 2
 
@@ -402,17 +499,15 @@ export default function Invitation() {
     else { audioRef.current.play().catch(() => {}); setMusicOn(true) }
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
+  const shareUrl = () => {
+    if (typeof navigator.share === 'function') {
+      shareNative(`Thiệp cưới - ${data?.groom} & ${data?.bride}`, window.location.href)
+    } else { setShowShare(true) }
+  }
+  const copyUrl = () => {
+    copyToClipboard(window.location.href)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }
-  const copyUrl = () => copyToClipboard(window.location.href)
-
-  const shareUrl = () => {
-    if (navigator.share) {
-      navigator.share({ title: `Thiệp cưới - ${data?.groom} & ${data?.bride}`, url: window.location.href })
-    } else { copyUrl() }
   }
 
   const printInvitation = () => window.print()
@@ -425,12 +520,6 @@ export default function Invitation() {
     const a = document.createElement('a')
     a.href = url; a.download = `wedding-${data.groom}-${data.bride}.ics`
     a.click(); URL.revokeObjectURL(url)
-  }
-
-  const shareZalo = () => {
-    const url = encodeURIComponent(window.location.href)
-    const title = encodeURIComponent(`Thiệp cưới - ${data?.groom} & ${data?.bride}`)
-    window.open(`https://zalo.me/share?url=${url}&title=${title}`, '_blank')
   }
 
   useEffect(() => {
@@ -454,6 +543,8 @@ export default function Invitation() {
         guest_name: guestName,
         guest_count: parseInt(guestCount) || 1,
         message: guestMessage,
+        transport: transport,
+        phone: phone || null,
       })
     }
     setRsvpSubmitting(false)
@@ -499,19 +590,19 @@ export default function Invitation() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="text-center max-w-sm">
           <Heart className="w-12 h-12 text-red-300 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Không tìm thấy thiệp cưới</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">{t('not_found', locale)}</h1>
           {isCustom ? (
             <>
-              <p className="text-gray-500 mb-4">Thiệp chưa được tạo. Vui lòng tạo mới.</p>
+              <p className="text-gray-500 mb-4">{t('not_found_create', locale)}</p>
               <Link to="/create" className="inline-block px-6 py-3 bg-red-500 text-white font-bold rounded-2xl text-sm hover:bg-red-600">
-                Tạo thiệp mới →
+                {t('create_new', locale)}
               </Link>
             </>
           ) : (
-            <p className="text-gray-500 mb-4">Thiệp không tồn tại hoặc đã bị xóa.</p>
+            <p className="text-gray-500 mb-4">{t('not_found_desc', locale)}</p>
           )}
           <div className="mt-4">
-            <Link to="/" className="text-red-500 font-semibold text-sm hover:underline">← Về trang chủ</Link>
+            <Link to="/" className="text-red-500 font-semibold text-sm hover:underline">{t('back_home', locale)}</Link>
           </div>
         </div>
       </div>
@@ -528,14 +619,14 @@ export default function Invitation() {
 
         {/* ── 데모 배너 ── */}
         {isDemo && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-3 flex items-center justify-between print-hidden">
+          <div className={`${isPreview ? 'sticky bottom-0' : 'fixed bottom-0 left-0 right-0'} z-50 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-3 flex items-center justify-between print-hidden`}>
             <div>
-              <p className="text-[10px] text-gray-400 font-medium">Đây là mẫu demo · {theme.name}</p>
-              <p className="text-xs text-gray-600">Tạo thiệp cưới của bạn miễn phí</p>
+              <p className="text-[10px] text-gray-400 font-medium">{t('demo_banner', locale)} · {theme.name}</p>
+              <p className="text-xs text-gray-600">{t('demo_banner2', locale)}</p>
             </div>
             <Link to={`/create?template=${slug}`}
               className="shrink-0 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-all">
-              Dùng mẫu này →
+              {t('use_template', locale)}
             </Link>
           </div>
         )}
@@ -547,9 +638,9 @@ export default function Invitation() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
                   <Lock className="w-3 h-3 text-red-400 shrink-0" />
-                  Tải về ảnh HD · Xoá watermark
+                  {t('download_hd', locale)}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Thanh toán một lần, tải không giới hạn</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">{t('download_unlock', locale)}</p>
               </div>
               <a
                 href={buildCheckoutUrl(invitationId) || '#'}
@@ -572,9 +663,9 @@ export default function Invitation() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
                   <Check className="w-3 h-3 text-green-500 shrink-0" />
-                  Đã thanh toán · Tải về không giới hạn
+                  {t('download_paid', locale)}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Ảnh HD 1080×1920 px · Không watermark</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">{t('download_hd_desc', locale)}</p>
               </div>
               <button
                 onClick={handleDownload}
@@ -584,21 +675,20 @@ export default function Invitation() {
                 {downloading
                   ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   : <Download className="w-3.5 h-3.5" />}
-                {downloading ? 'Đang tạo...' : 'Tải ảnh HD'}
+                  {downloading ? t('downloading', locale) : t('download_btn', locale)}
               </button>
             </div>
           </div>
         )}
 
         {/* ── 음악 버튼 (위치는 하단 배너 유무에 따라 조정) ── */}
-        <button
-          onClick={toggleMusic}
-          className={`fixed z-50 w-12 h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all print-hidden ${
-            (isDemo || (isShared && payCheckDone)) ? 'bottom-20 right-4' : 'bottom-6 right-6'
-          }`}
-        >
-          {musicOn ? <Music2 className={`w-5 h-5 ${colorClass}`} /> : <Music className="w-5 h-5 text-gray-400" />}
-        </button>
+        {!isPreview ? (
+          <button onClick={toggleMusic}
+            className={`fixed z-50 w-12 h-12 bg-white/90 backdrop-blur-md rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all print-hidden ${(isDemo || (isShared && payCheckDone)) ? 'bottom-20 right-4' : 'bottom-6 right-6'}`}
+          >
+            {musicOn ? <Music2 className={`w-5 h-5 ${colorClass}`} /> : <Music className="w-5 h-5 text-gray-400" />}
+          </button>
+        ) : null}
 
         {/* ── 워터마크: 미결제 공유 초대장에만 표시 ── */}
         {isShared && payCheckDone && !isPaid && <WatermarkOverlay />}
@@ -628,28 +718,44 @@ export default function Invitation() {
             <DecorativeWaves />
           </div>
 
-          {/* Slideshow background layers */}
-          <div className="absolute inset-0">
-            {hasSlideshow ? (
-              heroPhotos.map((photo, i) => (
-                <div key={i}
-                  className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
-                  style={{
-                    backgroundImage: `url(${photo})`,
-                    opacity: i === heroIdx ? 1 : 0,
-                    transform: i === heroIdx ? 'scale(1)' : 'scale(1.08)',
-                  }}
+          {/* GIF 감지 */}
+          {(() => {
+            const heroSrc = heroPhotos[0] || ''
+            const isGif = heroSrc.startsWith('data:image/gif') || heroSrc.toLowerCase().endsWith('.gif')
+            return isGif ? (
+              <div className="absolute inset-0">
+                <img src={heroSrc} alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
-              ))
-            ) : (
-              <div className={`absolute inset-0 ${theme.cardBg}`} />
-            )}
-            {/* Lighter gradient for card feel */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
-          </div>
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
+              </div>
+            ) : null
+          })()}
 
-          {/* Photo frame overlay — 진짜 청첩장 사진 느낌 */}
-          {hasSlideshow && (
+          {/* Slideshow background layers (non-GIF) */}
+          {!heroPhotos[0]?.startsWith('data:image/gif') && !heroPhotos[0]?.toLowerCase().endsWith('.gif') && (
+            <div className="absolute inset-0">
+              {hasSlideshow ? (
+                heroPhotos.map((photo, i) => (
+                  <div key={i}
+                    className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
+                    style={{
+                      backgroundImage: `url(${photo})`,
+                      opacity: i === heroIdx ? 1 : 0,
+                      transform: i === heroIdx ? 'scale(1)' : 'scale(1.08)',
+                    }}
+                  />
+                ))
+              ) : (
+                <div className={`absolute inset-0 ${theme.cardBg}`} />
+              )}
+              {/* Lighter gradient for card feel */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
+            </div>
+          )}
+
+          {/* Photo frame overlay — for non-GIF slideshow */}
+          {hasSlideshow && !heroPhotos[0]?.startsWith('data:image/gif') && !heroPhotos[0]?.toLowerCase().endsWith('.gif') && (
             <div className="absolute inset-8 top-16 bottom-20 z-10 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl pointer-events-none">
               {heroPhotos.map((photo, i) => (
                 <div key={i}
@@ -666,8 +772,8 @@ export default function Invitation() {
             </div>
           )}
 
-          {/* Slideshow dot indicator */}
-          {hasSlideshow && (
+          {/* Slideshow dot indicator (non-GIF) */}
+          {hasSlideshow && !heroPhotos[0]?.startsWith('data:image/gif') && !heroPhotos[0]?.toLowerCase().endsWith('.gif') && (
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex gap-1.5 print-hidden">
               {heroPhotos.map((_, i) => (
                 <button key={i} onClick={() => setHeroIdx(i)}
@@ -691,7 +797,8 @@ export default function Invitation() {
             <ArrowLeft className="w-4 h-4 text-white" />
           </Link>
 
-          <div className="absolute top-12 right-4 z-30 flex gap-2 print-hidden">
+          <div className="absolute top-12 right-4 z-30 flex gap-2 items-center print-hidden">
+            <LanguageSwitcher locale={locale} onChange={changeLocale} />
             <button onClick={printInvitation} className="w-9 h-9 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/40 transition-colors">
               <Printer className="w-4 h-4 text-white" />
             </button>
@@ -706,7 +813,7 @@ export default function Invitation() {
               <svg className="w-12 h-3 overflow-visible" viewBox="0 0 48 8" fill="none">
                 <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={heroSecStroke} strokeWidth="0.7" opacity="0.5" />
               </svg>
-              <span className={`text-xs font-light tracking-[0.3em] ${heroSecondary} ${decorativeFontClass}`}>WEDDING</span>
+              <span className={`text-xs font-light tracking-[0.3em] ${heroSecondary} ${decorativeFontClass}`}>{t('hero.wedding', locale)}</span>
               <svg className="w-12 h-3 overflow-visible" viewBox="0 0 48 8" fill="none">
                 <path d="M0,4 Q12,0 24,4 Q36,8 48,4" stroke={heroSecStroke} strokeWidth="0.7" opacity="0.5" />
               </svg>
@@ -724,7 +831,7 @@ export default function Invitation() {
                 <path d="M0,4 Q8,0 16,4 Q24,8 32,4 Q40,0 48,4 Q56,8 64,4" stroke={heroAccentStroke} strokeWidth="0.8" opacity="0.6" />
               </svg>
             </div>
-            <p className={`text-xs font-light tracking-[0.3em] ${heroSecondary} ${decorativeFontClass} mb-3`}>WEDDING INVITATION</p>
+            <p className={`text-xs font-light tracking-[0.3em] ${heroSecondary} ${decorativeFontClass} mb-3`}>{t('hero.invitation', locale)}</p>
             <h1 className={`${heroNameFontClass} font-bold ${heroFontColor} ${decorativeFontClass} text-center leading-tight break-words hyphens-auto max-w-xs`}>
               {groomDisplay}
               <span className={`mx-3 ${hasHeroPhoto ? 'text-white/90' : theme.accent}`}>&</span>
@@ -736,7 +843,7 @@ export default function Invitation() {
               <svg className="w-10 h-3" viewBox="0 0 40 8" fill="none">
                 <path d="M0,4 Q10,0 20,4 Q30,8 40,4" stroke={heroSecStroke} strokeWidth="0.7" opacity="0.4" />
               </svg>
-              <span className={`text-[8px] tracking-[0.4em] uppercase ${decorativeFontClass}`} style={{ color: heroSecStroke, opacity: 0.5 }}>Love</span>
+              <span className={`text-[8px] tracking-[0.4em] uppercase ${decorativeFontClass}`} style={{ color: heroSecStroke, opacity: 0.5 }}>{t('love', locale).toUpperCase()}</span>
               <svg className="w-10 h-3" viewBox="0 0 40 8" fill="none">
                 <path d="M0,4 Q10,0 20,4 Q30,8 40,4" stroke={heroSecStroke} strokeWidth="0.7" opacity="0.4" />
               </svg>
@@ -750,7 +857,7 @@ export default function Invitation() {
         {/* ===== WELCOME ===== */}
         <section id="section-welcome" className="px-6 py-16 text-center print-section">
           <AnimatedSection>
-            <SectionTitle icon="💌" title="Thân mời" titleEn="Welcome" color={colorClass} />
+            <SectionTitle icon="💌" title={t('section.welcome', locale)} titleEn={t('section.welcome.en', locale)} color={colorClass} />
             <p className={`${groomNameFontClass} font-bold text-gray-800 mb-2 break-words hyphens-auto text-center`}>{data.groom}</p>
             {data.groomParent && <p className="text-gray-400 text-sm mb-1 break-words text-center">Con trai {data.groomParent}</p>}
             <div className="flex justify-center my-4"><Heart className="w-5 h-5 text-gray-300" /></div>
@@ -760,23 +867,47 @@ export default function Invitation() {
           </AnimatedSection>
         </section>
 
+        {/* ===== LOVE STORY TIMELINE ===== */}
+        {data.loveStory && data.loveStory.length > 0 && (
+          <section id="section-lovestory" className="px-6 py-16 bg-gray-50 print-section">
+            <AnimatedSection delay={80}>
+              <SectionTitle icon="💕" title="Chuyện Tình Yêu" titleEn="Love Story" color={colorClass} />
+              <div className="relative pl-8 border-l-2 border-gray-200 space-y-6">
+                {data.loveStory.map((m, i) => (
+                  <div key={i} className="relative">
+                    <div className="absolute -left-[25px] top-0 w-4 h-4 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center">
+                      <div className={`w-1.5 h-1.5 rounded-full ${bgColorClass || 'bg-red-500'}`} />
+                    </div>
+                    {m.photo && (
+                      <img src={m.photo} alt="" className="w-full aspect-[16/9] object-cover rounded-xl mb-2" loading="lazy" />
+                    )}
+                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{m.date}</p>
+                    <p className={`font-bold text-sm mt-0.5 ${colorClass}`}>{m.title}</p>
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{m.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </AnimatedSection>
+          </section>
+        )}
+
         {/* ===== COUNTDOWN ===== */}
         <section id="section-countdown" className="px-6 py-12 bg-gradient-to-r from-red-50 via-white to-red-50 print-section">
           <AnimatedSection delay={100}>
-            <SectionTitle icon="📅" title="Ngày cưới" titleEn="Countdown" color={colorClass} />
+            <SectionTitle icon="📅" title={t('section.countdown', locale)} titleEn={t('section.countdown.en', locale)} color={colorClass} />
             <div className="flex items-center justify-center gap-6">
               <div className="text-center">
                 <div className={`text-4xl font-bold ${colorClass}`}>{dday.days}</div>
-                <div className="text-xs text-gray-400 mt-1">Ngày</div>
+                <div className="text-xs text-gray-400 mt-1">{t('days', locale)}</div>
               </div>
               <div className={`text-4xl font-light ${colorClass}`}>:</div>
               <div className="text-center">
                 <div className={`text-4xl font-bold ${colorClass}`}>{dday.hours}</div>
-                <div className="text-xs text-gray-400 mt-1">Giờ</div>
+                <div className="text-xs text-gray-400 mt-1">{t('hours', locale)}</div>
               </div>
             </div>
             <p className="text-center text-sm text-gray-500 mt-4">
-              {data.date} (giờ {data.time})
+              {data.date} ({t('time', locale).toLowerCase()} {data.time})
             </p>
             {lunarDateStr && (
               <p className="text-center text-xs text-gray-400 mt-1 italic">
@@ -789,14 +920,14 @@ export default function Invitation() {
         {/* ===== DETAILS ===== */}
         <section id="section-details" className="px-6 py-16 print-section">
           <AnimatedSection delay={200}>
-            <SectionTitle icon="🎊" title="Thông tin" titleEn="Wedding Details" color={colorClass} />
+            <SectionTitle icon="🎊" title={t('section.details', locale)} titleEn={t('section.details.en', locale)} color={colorClass} />
             <div className="space-y-4">
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
                 <div className={`w-12 h-12 ${bgColorClass || 'bg-red-100'} rounded-xl flex items-center justify-center shrink-0`}>
                   <Calendar className={`w-6 h-6 ${colorClass}`} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Thời gian</p>
+                  <p className="text-xs text-gray-400">{t('time', locale)}</p>
                   <p className="font-semibold text-gray-800">{data.date} — {data.time}</p>
                 </div>
               </div>
@@ -805,7 +936,7 @@ export default function Invitation() {
                   <MapPin className={`w-6 h-6 ${colorClass}`} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-gray-400">Địa điểm</p>
+                  <p className="text-xs text-gray-400">{t('location', locale)}</p>
                   <p className="font-semibold text-gray-800 text-sm break-words">{data.venue}</p>
                 </div>
               </a>
@@ -831,7 +962,7 @@ export default function Invitation() {
                   <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
                   <polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/>
                 </svg>
-                Xem bản đồ
+                {t('view_map', locale)}
               </a>
             </div>
 
@@ -844,14 +975,14 @@ export default function Invitation() {
                 className={`flex-1 py-3.5 rounded-2xl font-bold text-sm text-white transition-all ${bgColorClass || 'bg-red-500'} hover:opacity-90 flex items-center justify-center gap-2 shadow-sm`}
               >
                 <MapPin className="w-4 h-4 shrink-0" />
-                Chỉ đường
+                {t('directions', locale)}
               </a>
               <button
                 onClick={saveToCalendar}
                 className="flex-1 py-3.5 rounded-2xl font-bold text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
               >
                 <Calendar className="w-4 h-4 shrink-0" />
-                Lưu lịch
+                {t('save_calendar', locale)}
               </button>
             </div>
           </AnimatedSection>
@@ -860,7 +991,7 @@ export default function Invitation() {
         {/* ===== GALLERY ===== */}
         <section id="section-gallery" className="px-6 py-16 bg-gray-50 print-section">
           <AnimatedSection delay={300}>
-            <SectionTitle icon="📸" title="Album ảnh" titleEn="Photo Gallery" color={colorClass} />
+            <SectionTitle icon="📸" title={t('section.gallery', locale)} titleEn={t('section.gallery.en', locale)} color={colorClass} />
             <div className="grid grid-cols-2 gap-3">
               {data.gallery.length > 0 ? data.gallery.map((url, i) => (
                 <img key={i} src={url} alt={`Photo ${i + 1}`} className="w-full aspect-[3/4] object-cover rounded-2xl hover:opacity-90 transition-opacity hover:scale-[1.02] duration-500" loading="lazy" />
@@ -878,17 +1009,17 @@ export default function Invitation() {
         {/* ===== BANK ===== */}
         <section id="section-bank" className="px-6 py-16 print-section">
           <AnimatedSection delay={400}>
-            <SectionTitle icon="🧧" title="Tiền mừng cưới" titleEn="Wedding Gifts" color={colorClass} />
-            <p className="text-center text-sm text-gray-500 mb-4">Cảm ơn tấm lòng của quý khách</p>
+            <SectionTitle icon="🧧" title={t('section.bank', locale)} titleEn={t('section.bank.en', locale)} color={colorClass} />
+            <p className="text-center text-sm text-gray-500 mb-4">{t('bank_thanks', locale)}</p>
             <button onClick={() => setShowBank(!showBank)}
               className={`w-full py-4 rounded-2xl font-bold text-sm border-2 transition-all ${showBank ? `${colorClass.replace('text-', 'border-') || 'border-red-500'} bg-red-50` : 'border-gray-200 text-gray-600'}`}>
-              Xem tài khoản {showBank ? '▲' : '▼'}
+              {t('bank_view', locale)} {showBank ? '▲' : '▼'}
             </button>
             {showBank && (
               <div className="mt-4 space-y-3 animate-fade-in">
                 {([
-                  { side: 'Groom', label: 'Nhà trai', bankText: data.bankGroom, bankId: data.bankGroomId, account: data.bankGroomAccount, holderName: data.bankGroomName, parent: data.groomParent },
-                  { side: 'Bride',  label: 'Nhà gái',  bankText: data.bankBride, bankId: data.bankBrideId, account: data.bankBrideAccount, holderName: data.bankBrideName, parent: data.brideParent },
+                  { side: 'Groom', label: t('bank_groom', locale), bankText: data.bankGroom, bankId: data.bankGroomId, account: data.bankGroomAccount, holderName: data.bankGroomName, parent: data.groomParent },
+                  { side: 'Bride',  label: t('bank_bride', locale),  bankText: data.bankBride, bankId: data.bankBrideId, account: data.bankBrideAccount, holderName: data.bankBrideName, parent: data.brideParent },
                 ]).map(({ side, label, bankText, bankId, account, holderName, parent }) => {
                   const hasQr = bankId && account && holderName
                   const displayText = bankText || (hasQr ? `${VN_BANKS.find(b=>b.id===bankId)?.short || ''}: ${account}` : 'Bank: 1234 5678 9012')
@@ -908,7 +1039,7 @@ export default function Invitation() {
                       <p className="font-bold text-gray-800 text-sm">{displayText}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{parent}</p>
                       <button onClick={() => copyToClipboard(account || displayText)} className="mt-2 text-xs text-red-500 font-semibold flex items-center gap-1">
-                        {copied ? <><Check className="w-3 h-3" /> Đã sao chép</> : <><Copy className="w-3 h-3" /> Sao chép số TK</>}
+                        {copied ? <><Check className="w-3 h-3" /> {t('bank_copied', locale)}</> : <><Copy className="w-3 h-3" /> {t('bank_copy', locale)}</>}
                       </button>
                     </div>
                   )
@@ -921,28 +1052,43 @@ export default function Invitation() {
         {/* ===== RSVP ===== */}
         <section id="section-rsvp" className="px-6 py-16 bg-gray-50 print-section">
           <AnimatedSection delay={500}>
-            <SectionTitle icon="💬" title="Xác nhận tham dự" titleEn="RSVP" color={colorClass} />
+            <SectionTitle icon="💬" title={t('section.rsvp', locale)} titleEn={t('section.rsvp.en', locale)} color={colorClass} />
             {rsvpSent ? (
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Check className="w-8 h-8 text-green-500" />
                 </div>
-                <p className="font-bold text-gray-800">Cảm ơn bạn!</p>
-                <p className="text-sm text-gray-500">Phản hồi đã được gửi</p>
+                <p className="font-bold text-gray-800">{t('rsvp_sent', locale)}</p>
+                <p className="text-sm text-gray-500">{t('rsvp_sent_desc', locale)}</p>
               </div>
             ) : (
               <div className="space-y-4">
-                <input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Tên của bạn" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                <input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder={t('guest_name', locale)} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
                 <div className="flex gap-3">
-                  <input value={guestCount} onChange={e => setGuestCount(e.target.value)} type="number" min="1" max="10" placeholder="Số người" className="w-24 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                  <input value={guestCount} onChange={e => setGuestCount(e.target.value)} type="number" min="1" max="10" placeholder={t('guest_count', locale)} className="w-24 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
                   <select value={guestCount} onChange={e => setGuestCount(e.target.value)} className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm text-gray-600">
-                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} người</option>)}
+                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} {t('persons', locale)}</option>)}
                   </select>
                 </div>
-                <textarea value={guestMessage} onChange={e => setGuestMessage(e.target.value)} placeholder="Lời chúc" rows={3} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm resize-none" />
+                <div className="flex gap-3">
+                  <select value={transport} onChange={e => setTransport(e.target.value)} className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm text-gray-600">
+                    <option value="self">{t('transport_self', locale)}</option>
+                    <option value="together">{t('transport_together', locale)}</option>
+                  </select>
+                  <input value={phone} onChange={e => setPhone(e.target.value)} placeholder={t('phone', locale)} type="tel" className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm" />
+                </div>
+                {transport === 'together' && (
+                  <div className="p-3 bg-amber-50 rounded-xl text-xs text-gray-600 space-y-1">
+                    <p className="font-semibold">{t('pickup_info', locale)}</p>
+                    <p>{t('pickup_time', locale)}: {data.pickupTime || '08:00'}</p>
+                    <p>{t('pickup_location', locale)}: {data.pickupLocation || '—'}</p>
+                    <p>{t('pickup_contact', locale)}: {data.pickupContact || '—'}</p>
+                  </div>
+                )}
+                <textarea value={guestMessage} onChange={e => setGuestMessage(e.target.value)} placeholder={t('guest_message', locale)} rows={3} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-red-400 outline-none transition-all text-sm resize-none" />
                 <button onClick={submitRsvp} disabled={!guestName || rsvpSubmitting}
                   className={`w-full py-4 rounded-2xl font-bold text-sm text-white transition-all disabled:bg-gray-300 ${bgColorClass || 'bg-red-500'} hover:opacity-90 flex items-center justify-center gap-2`}>
-                  <MessageCircle className="w-4 h-4" /> {rsvpSubmitting ? 'Đang gửi...' : 'Gửi phản hồi'}
+                  <MessageCircle className="w-4 h-4" /> {rsvpSubmitting ? t('sending', locale) : t('send', locale)}
                 </button>
               </div>
             )}
@@ -952,10 +1098,10 @@ export default function Invitation() {
         {/* ===== GUEST BOOK ===== */}
         <section id="section-guestbook" className="px-6 py-16 print-section">
           <AnimatedSection delay={600}>
-            <SectionTitle icon="📖" title="Sổ lưu bút" titleEn="Guest Book" color={colorClass} />
+            <SectionTitle icon="📖" title={t('section.guestbook', locale)} titleEn={t('section.guestbook.en', locale)} color={colorClass} />
             <div className="space-y-4">
               {guestbook.length === 0 ? (
-                <p className="text-center text-sm text-gray-400 py-4">Chưa có lời chúc nào. Hãy là người đầu tiên!</p>
+                <p className="text-center text-sm text-gray-400 py-4">{t('guestbook_empty', locale)}</p>
               ) : guestbook.map((g, i) => (
                 <div key={i} className="bg-gray-50 rounded-2xl p-4 hover:bg-red-50 transition-colors">
                   <div className="flex items-center gap-2 mb-2">
@@ -973,22 +1119,49 @@ export default function Invitation() {
 
         {/* ===== ACTION BUTTONS ===== */}
         <section className="px-6 py-8 bg-gray-50 print-hidden">
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={saveToCalendar} className="p-4 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
+          <div className="grid grid-cols-3 gap-3">
+            <button onClick={saveToCalendar} className="p-3 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
               <Calendar className="w-5 h-5 text-red-400 mx-auto mb-1" />
-              <span className="text-xs font-semibold text-gray-600">Lưu lịch</span>
+              <span className="text-[10px] font-semibold text-gray-600">{t('save_calendar', locale)}</span>
             </button>
-            <button onClick={printInvitation} className="p-4 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
+            <button onClick={printInvitation} className="p-3 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
               <Printer className="w-5 h-5 text-red-400 mx-auto mb-1" />
-              <span className="text-xs font-semibold text-gray-600">In thiệp</span>
+              <span className="text-[10px] font-semibold text-gray-600">{t('print', locale)}</span>
             </button>
-            <button onClick={shareZalo} className="p-4 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
-              <MessageSquare className="w-5 h-5 text-blue-400 mx-auto mb-1" />
-              <span className="text-xs font-semibold text-gray-600">Chia sẻ Zalo</span>
+            <button onClick={() => setShowShare(true)} className="p-3 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
+              <Share2 className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+              <span className="text-[10px] font-semibold text-gray-600">{t('share', locale)}</span>
             </button>
-            <button onClick={() => setShowQr(true)} className="p-4 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
+            <button onClick={() => setShowQr(true)} className="p-3 bg-white rounded-2xl border border-gray-200 hover:border-red-200 transition-all text-center">
               <QrCode className="w-5 h-5 text-red-400 mx-auto mb-1" />
-              <span className="text-xs font-semibold text-gray-600">Mã QR</span>
+              <span className="text-[10px] font-semibold text-gray-600">{t('qr_code', locale)}</span>
+            </button>
+            <button onClick={() => {
+              if (!('Notification' in window)) return
+              if (Notification.permission === 'granted') {
+                scheduleReminder(data)
+                setReminderStatus('scheduled')
+              } else if (Notification.permission === 'denied') {
+                setReminderStatus('denied')
+              } else {
+                Notification.requestPermission().then(perm => {
+                  if (perm === 'granted') { scheduleReminder(data); setReminderStatus('scheduled') }
+                  else setReminderStatus('denied')
+                })
+              }
+            }} className={`p-3 bg-white rounded-2xl border transition-all text-center ${
+              reminderStatus === 'scheduled' ? 'border-green-200 bg-green-50' : 'border-gray-200 hover:border-amber-200'
+            }`}>
+              <span className={`w-5 h-5 mx-auto mb-1 flex items-center justify-center ${
+                reminderStatus === 'scheduled' ? 'text-green-500' : reminderStatus === 'denied' ? 'text-gray-400' : 'text-amber-400'
+              }`}>
+                {reminderStatus === 'scheduled' ? <Check className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+              </span>
+              <span className={`text-[10px] font-semibold ${
+                reminderStatus === 'scheduled' ? 'text-green-600' : reminderStatus === 'denied' ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                {reminderStatus === 'scheduled' ? t('reminder_btn', locale) : reminderStatus === 'denied' ? t('reminder_denied', locale).slice(0, 12)+'…' : t('reminder_grant', locale).slice(0, 8)}
+              </span>
             </button>
           </div>
         </section>
@@ -1006,31 +1179,93 @@ export default function Invitation() {
                   level="M"
                 />
               </div>
-              <p className="font-bold text-gray-800 text-sm mb-1">Chia sẻ qua mã QR</p>
+              <p className="font-bold text-gray-800 text-sm mb-1">{t('share_qr_desc', locale)}</p>
               {isCustom && !isShared && (
                 <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3 leading-relaxed">
-                  ⚠️ Link này chỉ hoạt động trên thiết bị này.<br />
-                  Nâng cấp cao cấp để có link chia sẻ vĩnh viễn.
+                  {t('share_temporary', locale).split('\n').map((l, i) => <React.Fragment key={i}>{i > 0 && <br />}{l}</React.Fragment>)}
                 </p>
               )}
               {isShared && (
                 <p className="text-[11px] text-green-600 bg-green-50 rounded-lg px-3 py-2 mb-3 leading-relaxed">
-                  ✅ Link này hoạt động trên mọi thiết bị.
+                  {t('share_permanent', locale)}
                 </p>
               )}
               <p className="text-xs text-gray-400 mb-4 break-all">{window.location.href}</p>
               <button onClick={copyUrl}
                 className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all flex items-center justify-center gap-2">
-                {copied ? <><Check className="w-4 h-4" /> Đã sao chép</> : <><Copy className="w-4 h-4" /> Sao chép link</>}
+                {copied ? <><Check className="w-4 h-4" /> {t('link_copied', locale)}</> : <><Copy className="w-4 h-4" /> {t('copy_link', locale)}</>}
               </button>
               {isCustom && (
                 <Link to="/dat-hang" onClick={() => setShowQr(false)}
                   className="mt-2 w-full py-2.5 bg-red-500 text-white rounded-xl text-xs font-semibold hover:bg-red-600 transition-all flex items-center justify-center gap-1">
-                  Đặt thiệp cao cấp — link vĩnh viễn →
+                  {t('upgrade', locale)}
                 </Link>
               )}
               <button onClick={() => setShowQr(false)}
-                className="mt-2 w-full py-2 text-gray-500 text-sm">Đóng</button>
+                className="mt-2 w-full py-2 text-gray-500 text-sm">{t('close', locale)}</button>
+            </div>
+          </div>
+        )}
+
+        {/* ===== SHARE MODAL ===== */}
+        {showShare && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-6 print-hidden" onClick={() => setShowShare(false)}>
+            <div className="bg-white rounded-t-3xl sm:rounded-3xl p-6 pb-10 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6 sm:hidden" />
+              <h3 className="font-bold text-gray-900 text-center mb-6">{t('share_card', locale)}</h3>
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                <button onClick={() => { shareNative(`${t('share_card', locale)} - ${data?.groom} & ${data?.bride}`, window.location.href); setShowShare(false) }}
+                  className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center">
+                    <Share2 className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-[11px] text-gray-600 font-medium">{t('share', locale)}</span>
+                </button>
+                <button onClick={() => { shareZalo(window.location.href, `${t('share_card', locale)} - ${data?.groom} & ${data?.bride}`); setShowShare(false) }}
+                  className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center">
+                    <MessageSquare className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-[11px] text-gray-600 font-medium">Zalo</span>
+                </button>
+                <button onClick={() => { shareFacebook(window.location.href); setShowShare(false) }}
+                  className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 bg-[#1877F2] rounded-2xl flex items-center justify-center">
+                    <Globe className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-[11px] text-gray-600 font-medium">Facebook</span>
+                </button>
+                <button onClick={() => { shareKakaoTalk(window.location.href, `Thiệp cưới - ${data?.groom} & ${data?.bride}`); setShowShare(false) }}
+                  className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 bg-[#FEE500] rounded-2xl flex items-center justify-center">
+                    <span className="text-sm font-bold text-[#391B1B]">Ka</span>
+                  </div>
+                  <span className="text-[11px] text-gray-600 font-medium">KakaoTalk</span>
+                </button>
+                <button onClick={() => { shareWhatsApp(window.location.href); setShowShare(false) }}
+                  className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 bg-[#25D366] rounded-2xl flex items-center justify-center">
+                    <ExternalLink className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-[11px] text-gray-600 font-medium">WhatsApp</span>
+                </button>
+                <button onClick={() => { shareTwitter(window.location.href, `Thiệp cưới - ${data?.groom} & ${data?.bride}`); setShowShare(false) }}
+                  className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 bg-gray-900 rounded-2xl flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">X</span>
+                  </div>
+                  <span className="text-[11px] text-gray-600 font-medium">Twitter / X</span>
+                </button>
+                <button onClick={() => { copyToClipboard(window.location.href); setCopied(true); setTimeout(() => { setCopied(false); setShowShare(false) }, 1500) }}
+                  className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center">
+                    {copied ? <Check className="w-6 h-6 text-green-500" /> : <Copy className="w-6 h-6 text-gray-600" />}
+                  </div>
+                  <span className="text-[11px] text-gray-600 font-medium">{copied ? t('link_copied', locale) : t('copy_link', locale)}</span>
+                </button>
+              </div>
+              <button onClick={() => setShowShare(false)}
+                className="w-full py-3 text-gray-500 text-sm font-medium border border-gray-100 rounded-2xl hover:bg-gray-50 transition-all">{t('close', locale)}</button>
             </div>
           </div>
         )}
@@ -1050,11 +1285,40 @@ export default function Invitation() {
           </div>
           <p className={`text-sm font-medium ${theme.fontColor} opacity-80`}>{data.groom.split(' ').pop()} & {data.bride.split(' ').pop()}</p>
           <p className={`text-xs mt-2 ${theme.fontColorSecondary} opacity-60`}>{data.date}</p>
-          {isCustom && <p className="text-[10px] mt-3 text-gray-400 italic">Được tạo bởi Thiệp Cưới Online</p>}
+          {isCustom && <p className="text-[10px] mt-3 text-gray-400 italic">{t('made_by', locale)}</p>}
           <div className="mt-6 opacity-50">
-            <p className={`text-[10px] ${theme.fontColorSecondary}`}>Powered by Thiệp Cưới Online</p>
+            <p className={`text-[10px] ${theme.fontColorSecondary}`}>{t('powered_by', locale)}</p>
           </div>
         </footer>
+
+        {/* ── 인쇄용 QR 코드 (프린트 시에만 표시) ── */}
+        <div className="hidden print:flex print-section flex-col items-center justify-center py-8 px-6 text-center">
+          <div className="w-40 h-40 mb-3">
+            <QRCodeSVG
+              value={window.location.href}
+              size={160}
+              bgColor="#ffffff"
+              fgColor="#111111"
+              level="M"
+            />
+          </div>
+          <p className="text-xs text-gray-500 font-medium">{t('share_qr_desc', locale)}</p>
+          <p className="text-[10px] text-gray-400 mt-1 break-all">{window.location.href}</p>
+        </div>
+
+        {/* ── Zalo / Messenger 채팅 버튼 ── */}
+        <div className="fixed bottom-28 right-4 z-40 flex flex-col gap-2 print-hidden">
+          <a href="https://zalo.me/0903696946" target="_blank" rel="noopener noreferrer"
+            className="w-12 h-12 bg-[#0068FF] rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+            title={t('chat_zalo', locale)}>
+            <span className="text-white font-bold text-xs">Z</span>
+          </a>
+          <a href="https://m.me/thesimple.vn" target="_blank" rel="noopener noreferrer"
+            className="w-12 h-12 bg-[#1877F2] rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+            title={t('chat_messenger', locale)}>
+            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 4.975 0 11.111c0 3.497 1.745 6.616 4.472 8.652V24l4.086-2.242c1.09.301 2.246.464 3.442.464 6.627 0 12-4.974 12-11.111C24 4.975 18.627 0 12 0z"/></svg>
+          </a>
+        </div>
 
       </div>
     </div>
