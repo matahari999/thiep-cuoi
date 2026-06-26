@@ -63,7 +63,7 @@ interface InvitationData {
 const demoData: Record<string, InvitationData> = {}
 
 for (let idx = 0; idx < allTemplates.length; idx++) {
-  const t = allTemplates[idx]
+  const tmpl = allTemplates[idx]
   const couples = [
     { g: 'Nguyễn Văn Trang', b: 'Trần Thị Anh', gp: 'Ông Nguyễn Văn A & Bà Trần Thị B', bp: 'Ông Trần Văn C & Bà Lê Thị D', d: '15/12/2026', ti: '10:00', v: 'Nhà hàng Hoàng Gia, 123 Nguyễn Huệ, Q.1, TP.HCM' },
     { g: 'Lê Văn Minh', b: 'Phạm Thị Hoa', gp: 'Ông Lê Văn E & Bà Phạm Thị F', bp: 'Ông Phạm Văn G & Bà Trần Thị H', d: '20/01/2027', ti: '11:00', v: 'Trung tâm Hội nghị Diamond, 456 Lê Lợi, Q.3, TP.HCM' },
@@ -88,20 +88,21 @@ for (let idx = 0; idx < allTemplates.length; idx++) {
     { g: 'Phùng Văn Lộc', b: 'Bạch Thị Ngà', gp: 'Ông Phùng Văn M2 & Bà Bạch Thị N2', bp: 'Ông Bạch Văn O2 & Bà Phùng Thị P2', d: '15/11/2028', ti: '11:00', v: 'White Swan Garden, 18A Cộng Hòa, Tân Bình, TP.HCM' },
   ]
   const c = couples[idx % couples.length]
+    const demoLocale = detectLocale()
     const sampleMilestones: Milestone[] = [
-      { date: c.d.split('/').map((_, __, a) => [a[1], a[0], a[2]].join('/')).join(' ').replace(/^/, 'Tháng ') || 'Tháng 3/2020', title: 'Lần Đầu Gặp Mặt', desc: 'Tôi đã từng không tin vào tình yêu online. Đã từng nghĩ làm sao có thể thích một người chưa từng gặp mặt?' },
-      { date: idx % 2 === 0 ? 'Tháng 7/2020' : 'Tháng 9/2020', title: 'Bắt Đầu Hẹn Hò', desc: 'Nhưng rồi một ngày đẹp trời, người con trai ấy xuất hiện, nắm tay rồi thủ thỉ vào tai: Hy vọng sau này anh được làm những điều ấy cùng em.' },
-      { date: 'Tháng 6/2024', title: 'Giây Phút Cầu Hôn', desc: 'Giây phút anh ngỏ lời Làm vợ anh nhé!, em đã nguyện ý đời này, đi đâu cũng được, miễn là cùng anh.' },
-      { date: c.d, title: 'Ngày Chung Đôi', desc: 'Sau bao nhiêu chờ đợi, cuối cùng ngày vui của chúng ta cũng tới rồi.' },
+      { date: t('milestone_month_3', demoLocale), title: t('milestone_1_title', demoLocale), desc: t('milestone_1_desc', demoLocale) },
+      { date: t(idx % 2 === 0 ? 'milestone_month_7' : 'milestone_month_9', demoLocale), title: t('milestone_2_title', demoLocale), desc: t('milestone_2_desc', demoLocale) },
+      { date: t('milestone_month_6', demoLocale), title: t('milestone_3_title', demoLocale), desc: t('milestone_3_desc', demoLocale) },
+      { date: c.d, title: t('milestone_4_title', demoLocale), desc: t('milestone_4_desc', demoLocale) },
     ]
-    demoData[t.id] = {
+    demoData[tmpl.id] = {
     groom: c.g, bride: c.b, groomParent: c.gp, brideParent: c.bp,
     date: c.d, time: c.ti, venue: c.v,
     mapUrl: 'https://maps.google.com/',
     message: 'Trân trọng kính mời bạn đến chung vui cùng gia đình chúng tôi trong ngày trọng đại. Sự hiện diện của bạn là niềm vinh hạnh lớn nhất của chúng tôi.',
     heroPhoto: '',
     gallery: [],
-    template: t.id,
+    template: tmpl.id,
     loveStory: sampleMilestones,
   }
 }
